@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - SnackMart</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/login.css">
+</head>
+
+<body>
+    <a href="/" class="back-home">
+        <i class="fas fa-arrow-left"></i>
+        Back to Home
+    </a>
+
+    <div class="login-container">
+        <div class="login-left">
+            <!-- <div class="login-icon">🍪</div> -->
+            <a  class="logo">
+                <img src="/static/images/logo.png" alt="Gokhale Bandu Logo">
+            </a>
+            <h1>Welcome to Gokhale Bandhu!</h1>
+            <!-- <p>Sign in to your SnackMart account and continue your delicious journey with our premium snacks and sweets.</p> -->
+        </div>
+
+        <div class="login-right">
+            <div class="login-header">
+                <a href="/" class="logo">
+                    <img src="/static/images/logo.png" alt="Gokhale Bandu Logo">
+                </a>
+                <h2 id="hh">Sign In</h2>
+                <h2 id="h3" style="display: none;">Forgot-Password</h2>
+                <!-- <p>Enter your credentials to access your account</p> -->
+            </div>
+
+            <div class="error-message" id="errorMessage">
+                <i class="fas fa-exclamation-circle"></i>
+                <span id="errorText"></span>
+            </div>
+
+            <div class="success-message" id="successMessage">
+                <i class="fas fa-check-circle"></i>
+                <span id="successText"></span>
+            </div>
+
+            <form class="login-form" id="loginForm">
+                <div class="form-group">
+                    <label for="phone">Phone Number</label>
+                    <input type="tel" id="mobile_number" name="mobile_number" placeholder="Enter your 10-digit phone number" pattern="[0-9]{10}" maxlength="10" required>
+                    <i class="fas fa-phone"></i>
+                    <div class="validation-message" id="mobile_numberValidation"></div>
+                </div>
+
+                <div class="form-group" id="passwordGroup">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                    <i class="fas fa-eye password-toggle" onclick="togglePassword('password')"></i>
+                    <div class="validation-message" id="passwordValidation"></div>
+                </div>
+
+                <div class="form-options">
+                    <label class="remember-me">
+                        <input type="checkbox" id="rememberMe" name="rememberMe">
+                        <span>Remember me</span>
+                    </label>
+                    <span class="forgot-password">Forgot Password?</span>
+                </div>
+
+                <div class="form-group" id="otpInputGroup" style="display: none;">
+                    <label for="otp">Enter OTP</label>
+                    <input type="text" id="otpInput" maxlength="6" placeholder="6-digit OTP" />
+                    <div class="validation-message" id="otpValidation"></div>
+                </div>
+
+                <button type="submit" id="signInBtn" class="login-btn">
+                    <span>Sign In</span>
+                </button>
+                <button type="button" class="login-btn" id="sendOtpButton" style="display: none;">
+                    <span>Send OTP</span>
+                </button>
+            </form>
+
+            <div class="form-group" id="resetPasswordGroup" style="display: none;">
+                <label for="newPassword">New Password</label>
+                <input type="password" id="newPassword" placeholder="Enter new password">
+                <i class="fas fa-eye password-toggle" onclick="togglePassword('newPassword')"></i>
+
+                <label for="confirmNewPassword">Confirm Password</label>
+                <input type="password" id="confirmNewPassword" placeholder="Confirm password">
+                <i class="fas fa-eye password-toggle" onclick="togglePassword('confirmNewPassword')"></i>
+
+                <div class="validation-message" id="resetErrorText" style="color: red;"></div>
+
+                <button type="button" class="login-btn" id="resetBtn" style="margin-top: 10px;">
+                    Reset Password
+                </button>
+            </div>
+
+            <div class="signup-link">
+                Don't have an account? <a href="/register">Sign up here</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/login.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Products - Gokhale Bandu</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/product.css">
+    <!-- Razorpay Script -->
+      <!-- Favicon (small logo on browser tab) -->
+  <link rel="icon" href="/static/images/logo.png" type="image/png" />
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+</head>
+<body>
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Header Section -->
+    <header class="header" id="header">
+        <div class="header-container">
+            <div class="top-header">
+                <!-- Logo with Welcome Message -->
+                <div class="logo-section">
+                    <a href="/" class="logo">
+                        <img src="/static/images/logo.png" alt="Gokhale Bandu Logo">
+                    </a>
+                    <div class="welcome-message" id="welcomeMessage">
+                        <span class="welcome-text">Welcome to</span>
+                        <span class="brand-name">Gokhale Bandu</span>
+                    </div>
+                </div>
+                
+                <!-- Delivery Info -->
+                <div class="delivery-info">
+                    <span class="delivery-label">Home Delivery Available</span>
+                    <span class="delivery-time">8:00 AM - 10:00 PM</span>
+                </div>
+                
+                <!-- Search Container -->
+                <div class="search-container">
+                    <div class="search-wrapper">
+                        <input type="text" placeholder="Search for delicious snacks..." class="search-input" id="searchBox" autocomplete="off">
+                        <button class="search-button" onclick="performSearch()">
+                            <i class="fas fa-search"></i>
+                        </button>
+                        <!-- Autocomplete Dropdown -->
+                        <div class="autocomplete-dropdown" id="autocompleteDropdown"></div>
+                    </div>
+                </div>
+
+                <!-- User Actions -->
+                <div class="user-actions">
+                    <!-- Orders Link - Desktop Only -->
+                    <a href="/orders.html" class="nav-link desktop-only">
+                        <i class="fas fa-receipt"></i>
+                        <span>Orders</span>
+                    </a>
+
+                    <!-- Auth Container -->
+                    <div class="auth-container">
+                        <a href="#" class="nav-link" id="authButton" onclick="toggleAuth()">
+                            <i class="fas fa-user"></i>
+                            <span id="authText">Sign In</span>
+                        </a>
+
+                        <!-- User Dropdown -->
+                        <div class="user-dropdown" id="userDropdown">
+                            <div class="dropdown-header">
+                                <div class="user-avatar">
+                                    <i class="fas fa-user-circle"></i>
+                                </div>
+                                <div class="user-info">
+                                    <span class="user-name" id="dropdownUserName">Guest User</span>
+                                    <span class="user-email" id="dropdownUserEmail">guest@example.com</span>
+                                </div>
+                            </div>
+                            <div class="dropdown-menu">
+                                <a href="/orders.html" class="dropdown-item">
+                                    <i class="fas fa-receipt"></i>
+                                    <span>My Orders</span>
+                                </a>
+                                <a href="/address" class="dropdown-item">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                    <span>Addresses</span>
+                                </a>
+                                <div class="dropdown-divider"></div>
+                                <button class="dropdown-item logout-item" onclick="confirmLogout()">
+                                    <i class="fas fa-sign-out-alt"></i>
+                                    <span>Logout</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cart Section - Desktop Only -->
+                    <div class="cart-section desktop-only">
+                        <div class="cart-icon" id="cartIcon" onclick="toggleCart()">
+                            <i class="fas fa-shopping-cart"></i>
+                            <span class="cart-count" id="cartCount">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mobile Header -->
+            <div class="mobile-header mobile-only">
+                <div class="mobile-nav">
+                    <!-- Mobile Auth -->
+                    <div class="mobile-auth-container">
+                        <a href="#" class="mobile-nav-link" id="mobileAuthButton" onclick="toggleMobileAuth()">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </a>
+                        
+                        <!-- Mobile User Dropdown -->
+                        <div class="user-dropdown mobile-dropdown" id="mobileUserDropdown">
+                            <div class="dropdown-header">
+                                <div class="user-avatar">
+                                    <i class="fas fa-user-circle"></i>
+                                </div>
+                                <div class="user-info">
+                                    <span class="user-name" id="mobileDropdownUserName">Guest User</span>
+                                    <span class="user-email" id="mobileDropdownUserEmail">guest@example.com</span>
+                                </div>
+                            </div>
+                            <div class="dropdown-menu">
+                                <a href="/orders.html" class="dropdown-item">
+                                    <i class="fas fa-receipt"></i>
+                                    <span>My Orders</span>
+                                </a>
+                                <a href="/address" class="dropdown-item">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                    <span>Addresses</span>
+                                </a>
+                                <div class="dropdown-divider"></div>
+                                <button class="dropdown-item logout-item" onclick="confirmLogout()">
+                                    <i class="fas fa-sign-out-alt"></i>
+                                    <span>Logout</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mobile Logo Section -->
+                    <div class="mobile-logo-section">
+                        <a href="/" class="mobile-logo">
+                            <img src="/static/images/logo.png" alt="Gokhale Bandu Logo">
+                        </a>
+                        <span class="mobile-brand-name">Gokhale Bandu</span>
+                    </div>
+
+                    <!-- Mobile Cart -->
+                    <div class="mobile-cart-section">
+                        <div class="mobile-cart-icon" id="mobileCartIcon" onclick="toggleCart()">
+                            <i class="fas fa-shopping-cart"></i>
+                            <span class="mobile-cart-count" id="mobileCartCount">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mobile Search -->
+                <div class="mobile-search-container">
+                    <div class="mobile-search-wrapper">
+                        <input type="text" placeholder="Search for delicious snacks..." class="mobile-search-input" id="mobileSearchBox" autocomplete="off">
+                        <button class="mobile-search-button" onclick="performMobileSearch()">
+                            <i class="fas fa-search"></i>
+                        </button>
+                        <!-- Mobile Autocomplete Dropdown -->
+                        <div class="mobile-autocomplete-dropdown" id="mobileAutocompleteDropdown"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Categories Navigation - Mobile Only -->
+            <div class="categories-nav mobile-only" id="categoriesNav">
+                <div class="categories-container">
+                    <button class="category-item active" onclick="setQuickFilter('all')">
+                        <span>All</span>
+                    </button>
+                    <button class="category-item" onclick="setQuickFilter('chewda')">
+                        <span>Chewda</span>
+                    </button>
+                    <button class="category-item" onclick="setQuickFilter('laddu')">
+                        <span>Laddu</span>
+                    </button>
+                    <button class="category-item" onclick="setQuickFilter('namkeen')">
+                        <span>Namkeen</span>
+                    </button>
+                    <button class="category-item" onclick="setQuickFilter('sweets')">
+                        <span>Sweets</span>
+                    </button>
+                    <button class="category-item" onclick="setQuickFilter('snacks')">
+                        <span>Snacks</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Cart Popup -->
+    <div class="cart-popup" id="cartPopup">
+        <div class="cart-popup-header">
+            <div class="cart-header-content">
+                <h3><i class="fas fa-shopping-cart"></i> My Cart</h3>
+                <span class="cart-item-count" id="cartItemCount">0 items</span>
+            </div>
+            <button class="close-cart" id="closeCart" onclick="toggleCart()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+       
+        <div class="cart-items" id="cartItems">
+            <div class="empty-cart">
+                <div class="empty-cart-icon">
+                    <i class="fas fa-shopping-cart"></i>
+                </div>
+                <h4>Your cart is empty</h4>
+                <p>Add some delicious snacks to get started!</p>
+                <button class="browse-products-btn" onclick="toggleCart()">
+                    <i class="fas fa-plus"></i> Browse Products
+                </button>
+            </div>
+        </div>
+        <div class="cart-footer">
+            <div class="cart-total">
+                <div class="total-row">
+                    <span class="total-label">Total Amount:</span>
+                    <span class="total-amount" id="cartTotal">₹0</span>
+                </div>
+            </div>
+             <button class="checkoutbtn" id="checkoutBtn" onclick="window.location.href='/cart'"> 
+                <i class="fas fa-credit-card"></i>
+                                View Full Cart
+
+            </button>
+            <button class="checkout-btn" id="checkoutBtn" onclick="window.location.href='/cart'"> 
+                <i class="fas fa-credit-card"></i>
+                View Full Cart
+            </button>
+        </div>
+    </div>
+
+    <!-- Hero Section -->
+    <section class="products-hero">
+        <div class="hero-content">
+            <h1 class="hero-title">Premium Traditional Snacks</h1>
+            <p class="hero-subtitle">Authentic flavors from Amravati, crafted with love and finest ingredients</p>
+        </div>
+    </section>
+
+    <!-- Products Section -->
+    <section class="products-section">
+        <div class="products-container">
+            <!-- Desktop Quick Filter Buttons -->
+            <div class="quick-filters desktop-only">
+                <div class="filters-grid">
+                    <button class="filter-btn active" onclick="setQuickFilter('all')">
+                        <div class="filter-icon">
+                            <i class="fas fa-th-large"></i>
+                        </div>
+                        <div class="filter-content">
+                            <span class="filter-title">All Products</span>
+                        </div>
+                    </button>
+                    <button class="filter-btn" onclick="setQuickFilter('chewda')">
+                        <div class="filter-icon">
+                            <i class="fas fa-seedling"></i>
+                        </div>
+                        <div class="filter-content">
+                            <span class="filter-title">Chewda</span>
+                        </div>
+                    </button>
+                    <button class="filter-btn" onclick="setQuickFilter('laddu')">
+                        <div class="filter-icon">
+                            <i class="fas fa-cookie"></i>
+                        </div>
+                        <div class="filter-content">
+                            <span class="filter-title">Laddu</span>
+                        </div>
+                    </button>
+                    <button class="filter-btn" onclick="setQuickFilter('namkeen')">
+                        <div class="filter-icon">
+                            <i class="fas fa-pepper-hot"></i>
+                        </div>
+                        <div class="filter-content">
+                            <span class="filter-title">Namkeen</span>
+                        </div>
+                    </button>
+                    <button class="filter-btn" onclick="setQuickFilter('sweets')">
+                        <div class="filter-icon">
+                            <i class="fas fa-candy-cane"></i>
+                        </div>
+                        <div class="filter-content">
+                            <span class="filter-title">Sweets</span>
+                        </div>
+                    </button>
+                </div>
+            </div>
+             <!-- Desktop Products Header -->
+            <div class="products-header desktop-only">
+                <div class="products-count">
+                    Showing <strong id="currentPageCount">0</strong> products
+                </div>
+                <div class="view-toggle">
+                    <button class="view-btn active" onclick="setGridView(3)" title="Grid View">
+                        <i class="fas fa-th"></i>
+                    </button>
+                    <button class="view-btn" onclick="setGridView(4)" title="Compact View">
+                        <i class="fas fa-th-large"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Products Grid -->
+            <div id="productsContainer" class="product-grid">
+                <div class="loading-spinner">
+                    <div class="spinner"></div>
+                    <div class="loading-text">Loading delicious products...</div>
+                </div>
+            </div>
+
+            <!-- Desktop Pagination -->
+            <div class="pagination desktop-only" id="pagination" style="display: none;">
+                <button onclick="changePage(-1)" id="prevBtn" class="pagination-btn">
+                    <i class="fas fa-chevron-left"></i> Previous
+                </button>
+                <div class="page-numbers" id="pageNumbers"></div>
+                <button onclick="changePage(1)" id="nextBtn" class="pagination-btn">
+                    Next <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Enhanced Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-wave">
+                <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
+                    <path d="M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V0Z" opacity=".25" class="shape-fill"></path>
+                    <path d="M0,0V15.81C13,36.92,27.64,56.86,47.69,72.05,99.41,111.27,165,111,224.58,91.58c31.15-10.15,60.09-26.07,89.67-39.8,40.92-19,84.73-46,130.83-49.67,36.26-2.85,70.9,9.42,98.6,31.56,31.77,25.39,62.32,62,103.63,73,40.44,10.79,81.35-6.69,119.13-24.28s75.16-39,116.92-43.05c59.73-5.85,113.28,22.88,168.9,38.84,30.2,8.66,59,6.17,87.09-7.5,22.43-10.89,48-26.93,60.65-49.24V0Z" opacity=".5" class="shape-fill"></path>
+                    <path d="M0,0V5.63C149.93,59,314.09,71.32,475.83,42.57c43-7.64,84.23-20.12,127.61-26.46,59-8.63,112.48,12.24,165.56,35.4C827.93,77.22,886,95.24,951.2,90c86.53-7,172.46-45.71,248.8-84.81V0Z" class="shape-fill"></path>
+                </svg>
+            </div>
+            <div class="footer-main">
+                <div class="footer-grid">
+                    <div class="footer-section">
+                        <div class="footer-logo">
+                            <img src="/static/images/logo.png" alt="Gokhale Bandu" class="footer-logo-img">
+                            <div class="footer-brand">
+                                <span class="footer-brand-name">Gokhale Bandu</span>
+                                <span class="footer-brand-tagline">Traditional Taste, Modern Quality</span>
+                            </div>
+                        </div>
+                        <p class="footer-description">Authentic snacks from Amravati, made with traditional recipes and premium ingredients. Taste the heritage!</p>
+                        <div class="social-links">
+                            <a href="#" class="social-link"><i class="fab fa-facebook-f"></i></a>
+                            <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
+                            <a href="#" class="social-link"><i class="fab fa-instagram"></i></a>
+                            <a href="#" class="social-link"><i class="fab fa-youtube"></i></a>
+                        </div>
+                    </div>
+                    
+                    <div class="footer-section">
+                        <h4>Quick Links</h4>
+                        <ul>
+                            <li><a href="/">Home</a></li>
+                            <li><a href="/products.html">Products</a></li>
+                            <li><a href="/orders">Orders</a></li>
+                            <li><a href="/contact.html">Contact</a></li>
+                        </ul>
+                    </div>
+                    
+                    <div class="footer-section">
+                        <h4>Contact Info</h4>
+                        <div class="contact-info">
+                            <div class="contact-item">
+                                <i class="fas fa-map-marker-alt"></i>
+                                <span>Amravati, Maharashtra</span>
+                            </div>
+                            <div class="contact-item">
+                                <i class="fas fa-phone"></i>
+                                <span>+91 9999-999-999</span>
+                            </div>
+                            <div class="contact-item">
+                                <i class="fas fa-envelope"></i>
+                                <span>info@gokhalebandu.com</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="footer-bottom">
+                    <div class="footer-bottom-content">
+                        <p>&copy; 2024 Gokhale Bandu. All rights reserved. Made with ❤️ in Amravati</p>
+                        <div class="footer-links">
+                            <a href="/privacy">Privacy Policy</a>
+                            <a href="/terms">Terms of Service</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/static/js/products.js"></script>
+    <script>
+         window.addEventListener("DOMContentLoaded", function () {
+    if (localStorage.getItem("openCartOnLoad") === "true") {
+      localStorage.removeItem("openCartOnLoad");
+      toggleCart();
+    }
+  });
+    </script>
+    
+</body>
+</html>

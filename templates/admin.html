@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Enhanced</title>
+    <link rel="stylesheet" href="/static/css/admin.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-store"></i>
+                <span>Admin Dashboard</span>
+            </div>
+            <div class="nav-menu">
+                <a href="#" class="nav-link" data-section="dashboard" onclick="switchSection('dashboard')">
+                    <i class="fas fa-tachometer-alt"></i>
+                    Dashboard
+                </a>
+                <a href="#" class="nav-link active" data-section="orders" onclick="switchSection('orders')">
+                    <i class="fas fa-shopping-cart"></i>
+                    Orders
+                </a>
+                <a href="#" class="nav-link" data-section="products" onclick="switchSection('products')">
+                    <i class="fas fa-box"></i>
+                    Products
+                </a>
+                <a href="#" class="nav-link" data-section="kitchen" onclick="switchSection('kitchen')">
+                    <i class="fas fa-utensils"></i>
+                    Kitchen Prep
+                </a>
+                <a href="#" class="nav-link" data-section="customers" onclick="switchSection('customers')">
+                    <i class="fas fa-users"></i>
+                    Customers
+                </a>
+                <a href="#" class="nav-link" data-section="analytics" onclick="switchSection('analytics')">
+                    <i class="fas fa-chart-bar"></i>
+                    Analytics
+                </a>
+                <a href="#" class="nav-link" data-section="settings" onclick="switchSection('settings')">
+                    <i class="fas fa-cog"></i>
+                    Settings
+                </a>
+            </div>
+            <div class="nav-user">
+                <div class="user-info">
+                    <i class="fas fa-user-circle"></i>
+                    <span>Admin</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Orders Section -->
+    <div id="ordersSection" class="section-content">
+        <div class="main-content">
+            <!-- Header -->
+            <header class="page-header">
+                <div class="header-content">
+                    <div class="header-left">
+                        <h1 class="page-title">
+                            <i class="fas fa-clipboard-list"></i>
+                            Orders Management
+                        </h1>
+                        <p class="page-subtitle">Manage and track all customer orders with new progression: Placed → Confirmed → In Process → Dispatched → Delivered</p>
+                    </div>
+                    <div class="header-stats">
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-shopping-cart"></i>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-number" id="totalOrders">0</span>
+                                <span class="stat-label">Total Orders</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-number" id="recentOrders">0</span>
+                                <span class="stat-label">Recent Orders</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-hourglass-half"></i>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-number" id="pendingOrders">0</span>
+                                <span class="stat-label">Pending Orders</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Dashboard Container -->
+            <div class="dashboard-container">
+                <!-- Navigation Tabs - Updated with new progression -->
+                <nav class="tabs-nav">
+                    <button class="tab-btn active" data-tab="recent">
+                        <i class="fas fa-clock"></i>
+                        Recent Orders (10 days)
+                        <span class="tab-count" id="recentCount">0</span>
+                    </button>
+                    <button class="tab-btn" data-tab="placed">
+                        <i class="fas fa-plus-circle"></i>
+                        Placed
+                        <span class="tab-count" id="placedCount">0</span>
+                    </button>
+                    <button class="tab-btn" data-tab="confirmed">
+                        <i class="fas fa-check"></i>
+                        Confirmed
+                        <span class="tab-count" id="confirmedCount">0</span>
+                    </button>
+                    <button class="tab-btn" data-tab="inprocess">
+                        <i class="fas fa-cog"></i>
+                        In Process
+                        <span class="tab-count" id="inprocessCount">0</span>
+                    </button>
+                    <button class="tab-btn" data-tab="dispatched">
+                        <i class="fas fa-truck"></i>
+                        Dispatched
+                        <span class="tab-count" id="dispatchedCount">0</span>
+                    </button>
+                    <button class="tab-btn" data-tab="delivered">
+                        <i class="fas fa-box"></i>
+                        Delivered
+                        <span class="tab-count" id="deliveredCount">0</span>
+                    </button>
+                    <button class="tab-btn" data-tab="completed">
+                        <i class="fas fa-flag-checkered"></i>
+                        Completed
+                        <span class="tab-count" id="completedCount">0</span>
+                    </button>
+                    <button class="tab-btn" data-tab="rejected">
+                        <i class="fas fa-times"></i>
+                        Rejected
+                        <span class="tab-count" id="rejectedCount">0</span>
+                    </button>
+                    <button class="tab-btn" data-tab="all">
+                        <i class="fas fa-list"></i>
+                        All Orders
+                        <span class="tab-count" id="allCount">0</span>
+                    </button>
+                </nav>
+
+                <!-- Controls -->
+                <div class="controls-section">
+                    <div class="search-container">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" id="searchInput" class="search-input" placeholder="Search by Order ID, Razorpay ID, Customer Name, or Phone...">
+                        <button id="clearSearch" class="clear-search" style="display: none;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="filter-container">
+                        <select id="dateFilter" class="filter-select">
+                            <option value="all">All Time</option>
+                            <option value="today">Today</option>
+                            <option value="yesterday">Yesterday</option>
+                            <option value="week">This Week</option>
+                            <option value="month">This Month</option>
+                            <option value="custom">Custom Range</option>
+                        </select>
+                        <input type="date" id="startDate" class="date-input" style="display: none;">
+                        <input type="date" id="endDate" class="date-input" style="display: none;">
+                    </div>
+                    
+                    <div class="sort-container" id="sortContainer" style="display: none;">
+                        <label for="sortSelect">Sort by:</label>
+                        <select id="sortSelect" class="sort-select">
+                            <option value="created_at-desc">Date (Newest First)</option>
+                            <option value="created_at-asc">Date (Oldest First)</option>
+                            <option value="customer_name-asc">Customer Name (A-Z)</option>
+                            <option value="customer_name-desc">Customer Name (Z-A)</option>
+                            <option value="total_amount-desc">Amount (High to Low)</option>
+                            <option value="total_amount-asc">Amount (Low to High)</option>
+                            <option value="order_status-asc">Status (A-Z)</option>
+                        </select>
+                    </div>
+
+                    <div class="view-controls">
+                        <button id="bulkActionsBtn" class="btn btn-secondary" style="display: none;">
+                            <i class="fas fa-tasks"></i>
+                            Bulk Actions
+                        </button>
+                        <button id="exportBtn" class="btn btn-secondary">
+                            <i class="fas fa-download"></i>
+                            Export
+                        </button>
+                        <button id="refreshBtn" class="btn btn-primary">
+                            <i class="fas fa-sync-alt"></i>
+                            Refresh
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Bulk Actions Panel -->
+                <div class="bulk-actions-panel" id="bulkActionsPanel" style="display: none;">
+                    <div class="bulk-actions-content">
+                        <span class="bulk-selected-count" id="bulkSelectedCount">0 orders selected</span>
+                        <div class="bulk-actions-buttons">
+                            <button class="btn btn-confirm" onclick="bulkUpdateStatus('confirmed')">
+                                <i class="fas fa-check"></i> Confirm All
+                            </button>
+                            <button class="btn btn-reject" onclick="bulkUpdateStatus('rejected')">
+                                <i class="fas fa-times"></i> Reject All
+                            </button>
+                            <button class="btn btn-secondary" onclick="clearBulkSelection()">
+                                <i class="fas fa-times"></i> Clear Selection
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Enhanced Table Container with Scrolling -->
+                <div class="table-container">
+                    <div class="table-wrapper scrollable-table">
+                        <table class="orders-table" id="ordersTable">
+                            <thead>
+                                <tr>
+                                    <th>
+                                        <input type="checkbox" id="selectAllOrders" class="bulk-checkbox">
+                                    </th>
+                                    <th class="sortable" data-sort="id">
+                                        Order ID
+                                        <i class="fas fa-sort sort-icon"></i>
+                                    </th>
+                                    <th class="sortable" data-sort="customer_name">
+                                        Customer & Phone
+                                        <i class="fas fa-sort sort-icon"></i>
+                                    </th>
+                                    <th class="sortable" data-sort="created_at">
+                                        Date
+                                        <i class="fas fa-sort sort-icon"></i>
+                                    </th>
+                                    <th class="sortable" data-sort="total_amount">
+                                        Amount
+                                        <i class="fas fa-sort sort-icon"></i>
+                                    </th>
+                                    <th class="sortable" data-sort="order_status">
+                                        Status
+                                        <i class="fas fa-sort sort-icon"></i>
+                                    </th>
+                                    <th>Items [Item, Qty, Variant]</th>
+                                    <th>Address</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ordersTableBody">
+                                <!-- Orders will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Loading State -->
+                    <div class="loading-state" id="loadingState">
+                        <div class="loading-spinner"></div>
+                        <p>Loading orders...</p>
+                    </div>
+
+                    <!-- Empty State -->
+                    <div class="empty-state" id="emptyState" style="display: none;">
+                        <div class="empty-icon">
+                            <i class="fas fa-inbox"></i>
+                        </div>
+                        <h3>No orders found</h3>
+                        <p>Try adjusting your search criteria or check a different tab.</p>
+                    </div>
+                </div>
+
+                <!-- Pagination -->
+                <div class="pagination-container" id="paginationContainer">
+                    <div class="pagination-info">
+                        <span id="paginationInfo">Showing 0 of 0 orders</span>
+                    </div>
+                    <div class="pagination-controls">
+                        <button id="prevBtn" class="btn btn-pagination" disabled>
+                            <i class="fas fa-chevron-left"></i> Previous
+                        </button>
+                        <div class="page-numbers" id="pageNumbers"></div>
+                        <button id="nextBtn" class="btn btn-pagination" disabled>
+                            Next <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Kitchen Preparation Section -->
+    <div id="kitchenSection" class="section-content" style="display: none;">
+        <div class="main-content">
+            <header class="page-header">
+                <div class="header-content">
+                    <div class="header-left">
+                        <h1 class="page-title">
+                            <i class="fas fa-utensils"></i>
+                            Kitchen Preparation Calculator
+                        </h1>
+                        <p class="page-subtitle">Calculate total quantities needed for order preparation</p>
+                    </div>
+                    <div class="header-stats">
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-fire"></i>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-number" id="activeOrders">0</span>
+                                <span class="stat-label">Active Orders</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-weight"></i>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-number" id="totalWeight">0g</span>
+                                <span class="stat-label">Total Weight</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-list-alt"></i>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-number" id="uniqueItems">0</span>
+                                <span class="stat-label">Unique Items</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="dashboard-container">
+                <div class="controls-section">
+                    <div class="filter-container">
+                        <select id="kitchenStatusFilter" class="filter-select">
+                            <option value="confirmed,inprocess">Confirmed & In Process</option>
+                            <option value="confirmed">Confirmed Only</option>
+                            <option value="inprocess">In Process Only</option>
+                            <option value="all">All Active Orders</option>
+                        </select>
+                    </div>
+                    <div class="view-controls">
+                        <button id="refreshKitchenBtn" class="btn btn-primary">
+                            <i class="fas fa-sync-alt"></i>
+                            Refresh
+                        </button>
+                        <button id="exportKitchenBtn" class="btn btn-secondary">
+                            <i class="fas fa-download"></i>
+                            Export Prep List
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Kitchen Preparation Table -->
+                <div class="table-container">
+                    <div class="table-wrapper scrollable-table">
+                        <table class="kitchen-table" id="kitchenTable">
+                            <thead>
+                                <tr>
+                                    <th>Product Name</th>
+                                    <th>Total Quantity (grams)</th>
+                                    <th>Number of Orders</th>
+                                    <th>Variants Breakdown</th>
+                                    <th>Priority</th>
+                                    <th>Estimated Prep Time</th>
+                                </tr>
+                            </thead>
+                            <tbody id="kitchenTableBody">
+                                <!-- Kitchen prep data will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="loading-state" id="kitchenLoadingState">
+                        <div class="loading-spinner"></div>
+                        <p>Calculating preparation requirements...</p>
+                    </div>
+
+                    <div class="empty-state" id="kitchenEmptyState" style="display: none;">
+                        <div class="empty-icon">
+                            <i class="fas fa-utensils"></i>
+                        </div>
+                        <h3>No preparation needed</h3>
+                        <p>No confirmed or in-process orders found.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Products Section -->
+    <div id="productsSection" class="section-content" style="display: none;">
+        <div class="main-content">
+            <!-- Header -->
+            <header class="page-header">
+                <div class="header-content">
+                    <div class="header-left">
+                        <h1 class="page-title">
+                            <i class="fas fa-box"></i>
+                            Products Management
+                        </h1>
+                        <p class="page-subtitle">Manage your product inventory and details</p>
+                    </div>
+                    <div class="header-stats">
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-box"></i>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-number" id="totalProducts">0</span>
+                                <span class="stat-label">Total Products</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-tags"></i>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-number" id="totalCategories">0</span>
+                                <span class="stat-label">Categories</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-number" id="lowStockProducts">0</span>
+                                <span class="stat-label">Low Stock</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Products Container -->
+            <div class="dashboard-container">
+                <!-- Controls -->
+                <div class="controls-section">
+                    <div class="search-container">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" id="productSearchInput" class="search-input" placeholder="Search products by name or category...">
+                        <button id="clearProductSearch" class="clear-search" style="display: none;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="filter-container">
+                        <select id="categoryFilter" class="filter-select">
+                            <option value="all">All Categories</option>
+                        </select>
+                    </div>
+                    
+                    <div class="sort-container">
+                        <label for="productSortSelect">Sort by:</label>
+                        <select id="productSortSelect" class="sort-select">
+                            <option value="item_name-asc">Name (A-Z)</option>
+                            <option value="item_name-desc">Name (Z-A)</option>
+                            <option value="category-asc">Category (A-Z)</option>
+                            <option value="price_01-desc">Price (High to Low)</option>
+                            <option value="price_01-asc">Price (Low to High)</option>
+                            <option value="shelf_life_days-desc">Shelf Life (High to Low)</option>
+                        </select>
+                    </div>
+
+                    <div class="view-controls">
+                        <button id="refreshProductsBtn" class="btn btn-primary">
+                            <i class="fas fa-sync-alt"></i>
+                            Refresh
+                        </button>
+                        <button class="btn btn-secondary" onclick="showAddProductModal()">
+                            <i class="fas fa-plus"></i>
+                            Add Product
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Products Table Container with Scrolling -->
+                <div class="table-container">
+                    <div class="table-wrapper scrollable-table">
+                        <table class="products-table" id="productsTable">
+                            <thead>
+                                <tr>
+                                    <th>Image</th>
+                                    <th class="sortable" data-sort="item_name">
+                                        Product Name
+                                        <i class="fas fa-sort sort-icon"></i>
+                                    </th>
+                                    <th class="sortable" data-sort="category">
+                                        Category
+                                        <i class="fas fa-sort sort-icon"></i>
+                                    </th>
+                                    <th class="sortable" data-sort="price_01">
+                                        Pricing
+                                        <i class="fas fa-sort sort-icon"></i>
+                                    </th>
+                                    <th class="sortable" data-sort="shelf_life_days">
+                                        Shelf Life
+                                        <i class="fas fa-sort sort-icon"></i>
+                                    </th>
+                                    <th class="sortable" data-sort="lead_time_days">
+                                        Lead Time
+                                        <i class="fas fa-sort sort-icon"></i>
+                                    </th>
+                                    <th>Description</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="productsTableBody">
+                                <!-- Products will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Loading State -->
+                    <div class="loading-state" id="productsLoadingState">
+                        <div class="loading-spinner"></div>
+                        <p>Loading products...</p>
+                    </div>
+
+                    <!-- Empty State -->
+                    <div class="empty-state" id="productsEmptyState" style="display: none;">
+                        <div class="empty-icon">
+                            <i class="fas fa-box-open"></i>
+                        </div>
+                        <h3>No products found</h3>
+                        <p>Try adjusting your search criteria or add new products.</p>
+                    </div>
+                </div>
+
+                <!-- Products Pagination -->
+                <div class="pagination-container" id="productsPaginationContainer">
+                    <div class="pagination-info">
+                        <span id="productsPaginationInfo">Showing 0 of 0 products</span>
+                    </div>
+                    <div class="pagination-controls">
+                        <button id="productsPrevBtn" class="btn btn-pagination" disabled>
+                            <i class="fas fa-chevron-left"></i> Previous
+                        </button>
+                        <div class="page-numbers" id="productsPageNumbers">
+                            <!-- Page numbers will be populated here -->
+                        </div>
+                        <button id="productsNextBtn" class="btn btn-pagination" disabled>
+                            Next <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Order Details Modal -->
+    <div class="modal-overlay" id="orderModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">Order Details</h2>
+                <button class="modal-close" id="modalClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Order details will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Details Modal -->
+    <div class="modal-overlay" id="productModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">Product Details</h2>
+                <button class="modal-close" id="productModalClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="productModalBody">
+                <!-- Product details will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Edit Modal -->
+    <div class="modal-overlay" id="productEditModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title" id="productEditTitle">Edit Product</h2>
+                <button class="modal-close" id="productEditModalClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="productEditModalBody">
+                <form id="productEditForm" class="product-form">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="editItemName">Product Name *</label>
+                            <input type="text" id="editItemName" name="item_name" required class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label for="editCategory">Category *</label>
+                            <input type="text" id="editCategory" name="category" required class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label for="editImageSrc">Image URL</label>
+                            <input type="url" id="editImageSrc" name="imagesrc" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label for="editShelfLife">Shelf Life (days) *</label>
+                            <input type="number" id="editShelfLife" name="shelf_life_days" required class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label for="editLeadTime">Lead Time (days) *</label>
+                            <input type="number" id="editLeadTime" name="lead_time_days" required class="form-input">
+                        </div>
+                    </div>
+                    
+                    <div class="pricing-section">
+                        <h3>Pricing & Packaging</h3>
+                        <div class="pricing-grid">
+                            <div class="pricing-group">
+                                <label for="editPacking01">Package 1 (grams)</label>
+                                <input type="number" id="editPacking01" name="packing_01" class="form-input">
+                                <label for="editPrice01">Price 1 (₹)</label>
+                                <input type="number" id="editPrice01" name="price_01" step="0.01" class="form-input">
+                            </div>
+                            <div class="pricing-group">
+                                <label for="editPacking02">Package 2 (grams)</label>
+                                <input type="number" id="editPacking02" name="packing_02" class="form-input">
+                                <label for="editPrice02">Price 2 (₹)</label>
+                                <input type="number" id="editPrice02" name="price_02" step="0.01" class="form-input">
+                            </div>
+                            <div class="pricing-group">
+                                <label for="editPacking03">Package 3 (grams)</label>
+                                <input type="number" id="editPacking03" name="packing_03" class="form-input">
+                                <label for="editPrice03">Price 3 (₹)</label>
+                                <input type="number" id="editPrice03" name="price_03" step="0.01" class="form-input">
+                            </div>
+                            <div class="pricing-group">
+                                <label for="editPacking04">Package 4 (grams)</label>
+                                <input type="number" id="editPacking04" name="packing_04" class="form-input">
+                                <label for="editPrice04">Price 4 (₹)</label>
+                                <input type="number" id="editPrice04" name="price_04" step="0.01" class="form-input">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editDescription">Description</label>
+                        <textarea id="editDescription" name="description" rows="4" class="form-textarea"></textarea>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeProductEditModal()">Cancel</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="/static/js/admin.js"></script>
+</body>
+</html>

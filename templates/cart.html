@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shopping Cart</title>
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+  />
+  <link rel="stylesheet" href="/static/css/cart.css" />
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <!-- Mobile Navbar -->
+    <div class="mobile-navbar mobile-only">
+      <button class="back-btn" onclick="goBack()">
+        <i class="fas fa-arrow-left"></i>
+      </button>
+      <span class="mobile-brand-text">My Cart</span>
+      <div class="mobile-actions">
+        <div class="mobile-cart-icon" style="position: relative;">
+        </div>
+      </div>
+    </div>
+
+    <!-- Desktop Header -->
+    <div class="desktop-only">
+      <div class="header-container">
+        <div class="top-header">
+          <button class="back-btn" onclick="goBack()" style="color: white; font-size: 1.1rem;">
+            <i class="fas fa-arrow-left"></i> My Cart 
+          </button>
+         
+         
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="container">
+      <!-- Loading State -->
+      <div id="loadingState" class="loading" style="display: none;">
+        <i class="fas fa-spinner fa-spin"></i>
+        <p>Loading your cart...</p>
+      </div>
+
+      <!-- Cart Content -->
+      <div id="cartContent">
+        <!-- Content will be rendered here -->
+      </div>
+    </div>
+  </main>
+
+  <!-- Address Modal -->
+  <div class="address-modal" id="addressModal">
+    <div class="address-modal-content">
+      <div class="address-modal-header">
+        <h3>Manage Delivery Address</h3>
+        <button class="modal-close" onclick="closeAddressModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="address-modal-body">
+        <!-- Content will be rendered here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-wave">
+      <svg
+        data-name="Layer 1"
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 1200 120"
+        preserveAspectRatio="none"
+      >
+        <path
+          d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.87,168.19-17.28,250.6-.39C823.78,31,906.4,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z"
+          class="shape-fill"
+        ></path>
+      </svg>
+    </div>
+    <div class="footer-main">
+      <div class="footer-grid">
+        <div>
+          <div class="footer-logo">
+            <i class="fas fa-shopping-bag" style="font-size: 2rem; color: #ffd700;"></i>
+            <div>
+              <span class="footer-brand-name">Gokhale Bandhu</span>
+              <span class="footer-brand-tagline">Quality Delivery</span>
+            </div>
+          </div>
+          <p class="footer-description">Delivering quality products right to your doorstep.</p>
+          <div class="social-links">
+            <a href="#" class="social-link"><i class="fab fa-facebook-f"></i></a>
+            <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
+            <a href="#" class="social-link"><i class="fab fa-instagram"></i></a>
+            <a href="#" class="social-link"><i class="fab fa-linkedin-in"></i></a>
+          </div>
+        </div>
+        <div class="footer-section">
+          <h4>Quick Links</h4>
+          <ul>
+            <li><a href="/">Home</a></li>
+            <li><a href="/products">Products</a></li>
+            <li><a href="/about">About Us</a></li>
+            <li><a href="/contact">Contact</a></li>
+          </ul>
+        </div>
+        <div class="footer-section">
+          <h4>Customer Service</h4>
+          <ul>
+            <li><a href="#">FAQ</a></li>
+            <li><a href="#">Shipping Info</a></li>
+            <li><a href="#">Returns</a></li>
+            <li><a href="#">Track Order</a></li>
+          </ul>
+        </div>
+        <div class="footer-section">
+          <h4>Contact Us</h4>
+          <div class="contact-info">
+            <div class="contact-item">
+              <i class="fas fa-map-marker-alt"></i>
+              <span>123 Store Street, City</span>
+            </div>
+            <div class="contact-item">
+              <i class="fas fa-phone"></i>
+              <span>+1 234 567 8900</span>
+            </div>
+            <div class="contact-item">
+              <i class="fas fa-envelope"></i>
+              <span>support@store.com</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="footer-bottom-content">
+        <p>&copy; 2025 Gokhale Bandhu. All rights reserved.</p>
+        <div class="footer-links">
+          <a href="#">Privacy Policy</a>
+          <a href="#">Terms & Conditions</a>
+          <a href="#">Refund Policy</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <script src="/static/js/cart.js"></script>
+</body>
+</html>

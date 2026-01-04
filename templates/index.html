@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SnackMart - Fresh Chewda, Laddu & More</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/index.css">
+</head>
+<body>
+    <!-- Pincode Selection Modal -->
+    <div class="pincode-modal" id="pincodeModal">
+        <div class="pincode-modal-content">
+            <button class="modal-close" onclick="closePincodeModal()">&times;</button>
+            <h2 class="modal-title">Where should we deliver?</h2>
+
+            <div class="pincode-search">
+                <i class="fas fa-search"></i>
+                <input type="text" placeholder="Search for pincode, area or street name." id="pincodeInput">
+            </div>
+
+            <div class="recent-searches">
+                <h4>Available Pincodes</h4>
+                <div id="pincodesList">
+                    <div class="loading-pincodes">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>Loading available pincodes...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header Section -->
+    <header class="header" id="header">
+        <div class="header-container">
+            <!-- Desktop Header -->
+            <div class="desktop-header">
+                <div class="top-header">
+                    <!-- Location Selector -->
+                    <div class="location-selector" onclick="openPincodeModal()">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <div class="location-text">
+                            <span class="pincode" id="selectedPincode">Select</span>
+                            <span class="location-name" id="selectedLocation">Pincode</span>
+                        </div>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+
+                    <!-- Logo -->
+                    <a href="/" class="logo">
+                        <img src="static/images/logo.png" alt="Logo">
+                    </a>
+
+                    <!-- Delivery Info -->
+                    <div class="delivery-info">
+                        <span class="delivery-label">Home Delivery Available</span>
+                        <span class="delivery-time">8:00 AM - 10:00 PM</span>
+                    </div>
+
+                    <!-- Search Container -->
+                    <div class="search-container">
+                        <input type="text" placeholder="Search for snacks..." class="search-input">
+                        <button class="search-button">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+
+                    <!-- User Actions -->
+                    <div class="user-actions">
+                        <!-- Products Link -->
+                        <a href="/product" class="nav-link">
+                            <i class="fas fa-th-large"></i>
+                            <span>Products</span>
+                        </a>
+
+                        <!-- Auth Container -->
+                        <div class="auth-container">
+                            <a href="#" class="nav-link" id="authButton" onclick="toggleAuth()">
+                                <i class="fas fa-user"></i>
+                                <span id="authText">Sign In</span>
+                            </a>
+
+                            <!-- Logout Dropdown -->
+                            <div class="logout-dropdown" id="logoutDropdown">
+                                <p>Are you sure you want to logout?</p>
+                                <button class="logout-btn" onclick="confirmLogout()">Yes, Logout</button>
+                                <button class="cancel-btn" onclick="cancelLogout()">Cancel</button>
+                            </div>
+                        </div>
+
+                        <!-- Cart Section -->
+                        <div class="cart-section">
+                            <div class="cart-icon" id="cartIcon">
+                                <i class="fas fa-shopping-cart"></i>
+                                <span class="cart-count" id="desktopCartCount">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mobile Header -->
+            <div class="mobile-header">
+                <!-- Mobile Top Row: Menu, Logo, Icons -->
+                <div class="mobile-top-row">
+                    <button class="mobile-menu-btn">
+                        <i class="fas fa-user"></i>
+                    </button>
+                    <a href="/" class="mobile-logo">
+                        <img src="static/images/logo.png" alt="Logo">
+                    </a>
+
+                    <div class="mobile-header-icons">
+                        <button class="mobile-icon-btn" onclick="window.location.href = '/product'">
+                            <i class="fas fa-box-open"></i>
+                        </button>
+                        <div class="mobile-cart-icon" id="cartIcon">
+                            <i id="viewFullCart" class="fas fa-shopping-cart"></i>
+                            <span class="mobile-cart-count" id="mobileCartCount">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mobile-header-group">
+                    <!-- Mobile Search Row -->
+                    <!-- <div class="mobile-search-row">
+                        <div class="mobile-search-container">
+                            <i class="fas fa-search mobile-search-icon"></i>
+                            <input type="text" placeholder="Search for snacks..." class="mobile-search-input">
+                        </div>
+                    </div> -->
+
+                    <!-- Mobile Location Row -->
+                    <div class="mobile-location-row" onclick="toggleLocationRow()" id="mobileLocationRow">
+                        <div class="mobile-location-info">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <div class="mobile-location-text">
+                                <span class="mobile-pincode" id="mobileSelectedPincode">400053</span>
+                                <span class="mobile-location-name" id="mobileSelectedLocation">Mumbai</span>
+                            </div>
+                            <i class="fas fa-chevron-down" id="locationChevron"></i>
+                        </div>
+                        <div class="mobile-delivery-info">
+                            <span class="mobile-delivery-label">Earliest Home Delivery available</span>
+                            <div class="mobile-delivery-time">
+                                <i class="fas fa-clock"></i>
+                                <span>Tomorrow 10:00 AM - 12:30 PM</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Cart Popup -->
+    <div class="cart-popup" id="cartPopup">
+        <div class="cart-popup-header">
+            <h3>My cart <span id="cartItemCount">0</span> items</h3>
+            <div class="cart-summary">
+                <div class="cart-savings">
+                    Savings
+                    <span id="cartSavings">₹0</span>
+                </div>
+                <div class="cart-total-summary">
+                    Cart Total
+                    <span id="cartTotal">₹0</span>
+                </div>
+            </div>
+            <button class="close-cart" id="closeCart">&times;</button>
+        </div>
+
+        <div class="cart-items" id="cartItems">
+            <div style="text-align: center; padding: 3rem;">
+                <i class="fas fa-shopping-cart" style="font-size: 4rem; color: #ddd; margin-bottom: 1rem;"></i>
+                <p style="color: #666; font-size: 1.1rem;">Your cart is empty</p>
+            </div>
+        </div>
+
+        <div class="cart-footer">
+            <div class="minimum-order">
+                Minimum Order Amount is ₹500
+            </div>
+             <button class="view-cart-btn" id="viewFullCart">
+                <i class="fas fa-credit-card"></i>
+                Proceed to Checkout
+            </button>
+        </div>
+    </div>
+
+    <!-- Hero Slider Section -->
+    <section class="hero-slider">
+        <div class="slider-container">
+            <div class="slide active" style="background: linear-gradient(135deg, #6a4c93, #e74c3c);">
+                <div class="slide-content">
+                    <h1>Fresh & Delicious Snacks</h1>
+                    <p>Discover our premium collection of traditional chewda, sweet laddu, and authentic Indian snacks</p>
+                    <a href="/product" class="cta-button">Shop Now <i class="fas fa-arrow-right"></i></a>
+                </div>
+            </div>
+            <div class="slide" style="background: linear-gradient(135deg, #8e44ad, #e74c3c);">
+                <div class="slide-content">
+                    <h1>Special Offers</h1>
+                    <p>Get up to 30% off on all traditional sweets and namkeen varieties</p>
+                    <a href="/offers" class="cta-button">View Offers <i class="fas fa-gift"></i></a>
+                </div>
+            </div>
+            <div class="slide" style="background: linear-gradient(135deg, #9b59b6, #f39c12);">
+                <div class="slide-content">
+                    <h1>Free Delivery</h1>
+                    <p>Free home delivery on orders above ₹500. Order now and save more!</p>
+                    <a href="/product" class="cta-button">Order Now <i class="fas fa-truck"></i></a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slider Navigation -->
+        <div class="slider-nav">
+            <button class="slider-btn prev" onclick="changeSlide(-1)">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <button class="slider-btn next" onclick="changeSlide(1)">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+
+        <!-- Slider Dots -->
+        <div class="slider-dots">
+            <span class="dot active" onclick="currentSlide(1)"></span>
+            <span class="dot" onclick="currentSlide(2)"></span>
+            <span class="dot" onclick="currentSlide(3)"></span>
+        </div>
+    </section>
+
+    <!-- Categories Section -->
+    <section class="categories" id="categories">
+        <div class="container">
+            <h2 class="section-title">Our Categories</h2>
+            <div class="categories-grid">
+                <div class="category-card" onclick="filterProducts('laddu')">
+                    <div class="category-icon">
+                        <img src="https://cdn.create.vista.com/api/media/small/243907958/stock-photo-laddu-laddoo-sweet-motichoor-bundi-white-background"
+                            alt="Sweet Laddu">
+                    </div>
+                    <h3>Laddu</h3>
+                    <p>Handmade with pure ghee</p>
+                </div>
+
+                <div class="category-card" onclick="filterProducts('namkeen')">
+                    <div class="category-icon">
+                        <img src="https://cdn.create.vista.com/api/media/medium/626451262/stock-photo-bhujia-spicy-deep-fried-sev-filled-burst-flavors-made-using?token="
+                            alt="Namkeen">
+                    </div>
+                    <h3>Namkeen</h3>
+                    <p>Spicy savory snacks</p>
+                </div>
+
+                <div class="category-card" onclick="filterProducts('sweets')">
+                    <div class="category-icon">
+                        <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQmMUQpGycGBlIW-BM7_01OXwVI9BADimP3nw&s"
+                            alt="Traditional Sweets">
+                    </div>
+                    <h3>Sweets</h3>
+                    <p>Authentic Indian sweets</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Featured Products -->
+    <section class="featured-products">
+        <div class="container">
+            <h2 class="section-title">Featured Products</h2>
+            <div id="featuredProductsContainer" class="product-grid">
+                <div class="loading">Loading products...</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Enhanced Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-wave">
+                <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
+                    <path
+                        d="M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V0Z"
+                        opacity=".25" class="shape-fill"></path>
+                    <path
+                        d="M0,0V15.81C13,36.92,27.64,56.86,47.69,72.05,99.41,111.27,165,111,224.58,91.58c31.15-10.15,60.09-26.07,89.67-39.8,40.92-19,84.73-46,130.83-49.67,36.26-2.85,70.9,9.42,98.6,31.56,31.77,25.39,62.32,62,103.63,73,40.44,10.79,81.35-6.69,119.13-24.28s75.16-39,116.92-43.05c59.73-5.85,113.28,22.88,168.9,38.84,30.2,8.66,59,6.17,87.09-7.5,22.43-10.89,48-26.93,60.65-49.24V0Z"
+                        opacity=".5" class="shape-fill"></path>
+                    <path
+                        d="M0,0V5.63C149.93,59,314.09,71.32,475.83,42.57c43-7.64,84.23-20.12,127.61-26.46,59-8.63,112.48,12.24,165.56,35.4C827.93,77.22,886,95.24,951.2,90c86.53-7,172.46-45.71,248.8-84.81V0Z"
+                        class="shape-fill"></path>
+                </svg>
+            </div>
+            <div class="footer-main">
+                <div class="footer-grid">
+                    <div class="footer-section">
+                        <div class="footer-logo">
+                            <span class="logo-icon">🍪</span>
+                            <span class="logo-text">SnackMart</span>
+                        </div>
+                        <p class="footer-description">Your favorite snacks delivered fresh to your doorstep. Quality
+                            guaranteed, happiness delivered!</p>
+                        <div class="social-links">
+                            <a href="#" class="social-link"><i class="fab fa-facebook-f"></i></a>
+                            <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
+                            <a href="#" class="social-link"><i class="fab fa-instagram"></i></a>
+                            <a href="#" class="social-link"><i class="fab fa-youtube"></i></a>
+                        </div>
+                    </div>
+
+                    <div class="footer-section">
+                        <h4>Quick Links</h4>
+                        <ul>
+                            <li><a href="/">Home</a></li>
+                            <li><a href="/product">All Products</a></li>
+                            <li><a href="/offers">Special Offers</a></li>
+                            <li><a href="/about">About Us</a></li>
+                        </ul>
+                    </div>
+
+                    <div class="footer-section">
+                        <h4>Customer Care</h4>
+                        <ul>
+                            <li><a href="/help">Help Center</a></li>
+                            <li><a href="/contact">Contact Us</a></li>
+                            <li><a href="/returns">Returns & Refunds</a></li>
+                            <li><a href="/shipping">Shipping Info</a></li>
+                        </ul>
+                    </div>
+
+                    <div class="footer-section">
+                        <h4>Contact Info</h4>
+                        <div class="contact-info">
+                            <div class="contact-item">
+                                <i class="fas fa-phone"></i>
+                                <span>+91 9999-999-999</span>
+                            </div>
+                            <div class="contact-item">
+                                <i class="fas fa-envelope"></i>
+                                <span>support@snackmart.com</span>
+                            </div>
+                            <div class="contact-item">
+                                <i class="fas fa-clock"></i>
+                                <span>8:00 AM - 10:00 PM</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="footer-bottom">
+                    <div class="footer-bottom-content">
+                        <p>&copy; 2024 SnackMart. All rights reserved. Made with ❤️ for snack lovers</p>
+                        <div class="footer-links">
+                            <a href="/privacy">Privacy Policy</a>
+                            <a href="/terms">Terms of Service</a>
+                            <a href="/cookies">Cookie Policy</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scroll to Top Button -->
+    <button class="scroll-top" id="scrollTop" onclick="scrollToTop()">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+
+    <script>
+  let lastScrollTop = 0;
+  const headerGroup = document.querySelector(".mobile-header-group");
+
+  window.addEventListener("scroll", function () {
+    const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
+
+    if (currentScroll > lastScrollTop && currentScroll > 50) {
+      // Scrolling down → hide
+      headerGroup.classList.add("hide-header-group");
+    } else if (currentScroll < lastScrollTop) {
+      // Scrolling up → show
+      headerGroup.classList.remove("hide-header-group");
+    }
+
+    lastScrollTop = currentScroll <= 0 ? 0 : currentScroll;
+  });
+
+  function toggleLocationRow() {
+    const locationRow = document.getElementById("mobileLocationRow");
+    locationRow.classList.toggle("expanded");
+  }
+</script>
+
+
+    <script src="/static/js/index.js"></script>
+</body>
+
+</html>

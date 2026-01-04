@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - SnackMart</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/register.css">
+</head>
+<body>
+    <a href="/" class="back-home">
+        <i class="fas fa-arrow-left"></i>
+        Back to Home
+    </a>
+
+    <div class="register-container">
+        <!-- ===== LEFT PANEL ===== -->
+        <div class="register-left">
+            <!-- <div class="register-icon" id="leftIcon">
+                <i class="fas fa-user-plus"></i>
+            </div> -->
+            <a  class="logo">
+                <img src="/static/images/logo.png" alt="Gokhale Bandu Logo">
+            </a>
+            <h1 id="leftTitle">Join our Gokhale Bandhu's Family!</h1>
+            <!-- <p id="leftDescription">Create your account and get access to premium snacks, exclusive deals, and a personalized shopping experience.</p> -->
+        </div>
+
+        <!-- ===== RIGHT PANEL ===== -->
+        <div class="register-right">
+            <div class="register-right-content">
+                <!-- ===== REGISTRATION FORM SECTION ===== -->
+                <div id="registerSection">
+                    <div class="section-header">
+                        <a href="/" class="logo">
+                            <img src="/static/images/logo.png" alt="Gokhale Bandu Logo">
+                        </a>
+                        <h2>Create Account</h2>
+                        <p>Fill in your details to get started</p>
+                    </div>
+
+                    <form class="register-form" id="registerForm" onsubmit="handleRegistration(event)">
+                        <!-- Personal Information Section -->
+                        <div class="form-section">
+                           
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="firstName">First Name</label>
+                                    <div class="input-with-icon">
+                                        <i class="fas fa-user"></i>
+                                        <input type="text" id="firstName" name="firstName" placeholder="Enter first name" required>
+                                    </div>
+                                    <div class="validation-message" id="firstNameValidation"></div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="lastName">Last Name</label>
+                                    <div class="input-with-icon">
+                                        <i class="fas fa-user"></i>
+                                        <input type="text" id="lastName" name="lastName" placeholder="Enter last name" required>
+                                    </div>
+                                    <div class="validation-message" id="lastNameValidation"></div>
+                                </div>
+                            </div>
+
+                          
+
+                       
+                                <div class="form-group">
+                                    <label for="phone">Phone Number</label>
+                                    <div class="input-with-icon">
+                                        <i class="fas fa-phone-alt"></i>
+                                        <input type="tel" id="phone" name="phone" placeholder="Enter 10-digit phone number" 
+                                            pattern="[0-9]{10}" maxlength="10" required>
+                                    </div>
+                                    <div class="validation-message" id="phoneValidation"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                      
+                        <!-- Password Section -->
+                        <div class="form-section">
+                          
+                            <div class="form-row">
+                                <div class="form-group">
+                                            <label for="password">Password <small>(e.g. pass@123)</small></label>
+
+                                    <div class="input-with-icon">
+                                        <i class="fas fa-lock"></i>
+                                        <input type="password" id="password" name="password" placeholder="Create password" required>
+                                        <i class="fas fa-eye password-toggle" onclick="togglePassword('password', this)"></i>
+                                    </div>
+                                    <div class="validation-message" id="passwordValidation"></div>
+                                    <div class="password-strength" id="passwordStrength">
+                                        <div class="strength-bar">
+                                            <div class="strength-fill"></div>
+                                        </div>
+                                        <div class="strength-text"></div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="confirmPassword">Confirm Password</label>
+                                    <div class="input-with-icon">
+                                        <i class="fas fa-lock"></i>
+                                        <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Confirm password" required>
+                                        <i class="fas fa-eye password-toggle" onclick="togglePassword('confirmPassword', this)"></i>
+                                    </div>
+                                    <div class="validation-message" id="confirmPasswordValidation"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Terms Checkbox -->
+                        <div class="terms-checkbox">
+                            <input type="checkbox" id="agreeTerms" name="agreeTerms" required>
+                            <label for="agreeTerms">
+                                I agree to the <a href="#" onclick="showTerms()">Terms of Service</a> and
+                                <a href="#" onclick="showPrivacy()">Privacy Policy</a>
+                            </label>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button type="submit" class="register-btn" id="registerBtn">
+                            <div class="loading" id="registerLoading"></div>
+                            <i class="fas fa-user-plus"></i>
+                            <span id="registerBtnText">Create Account</span>
+                        </button>
+                    </form>
+
+                    <div class="login-link">
+                        Already have an account? <a href="/login">Sign in here</a>
+                    </div>
+                </div>
+
+                <!-- ===== OTP VERIFICATION SECTION ===== -->
+                <div id="otpSection" class="hidden">
+                    <div class="section-header">
+                        <h2>Verify Phone Number</h2>
+                        <p>Enter the 6-digit code sent to your phone</p>
+                        <div class="phone-display" id="phoneDisplay">
+                            <i class="fas fa-mobile-alt"></i>
+                            <!-- <span>+91 98765 43210</span> -->
+                        </div>
+                    </div>
+<!-- 
+                    <div class="error-message" id="otpErrorMessage">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <span id="otpErrorText"></span>
+                    </div> -->
+
+                    <div class="success-message" id="otpSuccessMessage">
+                        <i class="fas fa-check-circle"></i>
+                        <span id="otpSuccessText"></span>
+                    </div>
+
+                    <form class="register-form" id="otpForm" onsubmit="handleOTPVerification(event)">
+                        <!-- OTP Input Fields -->
+                        <div class="otp-inputs">
+                            <input type="text" class="otp-input" maxlength="1" pattern="[0-9]" id="otp1">
+                            <input type="text" class="otp-input" maxlength="1" pattern="[0-9]" id="otp2">
+                            <input type="text" class="otp-input" maxlength="1" pattern="[0-9]" id="otp3">
+                            <input type="text" class="otp-input" maxlength="1" pattern="[0-9]" id="otp4">
+                            <input type="text" class="otp-input" maxlength="1" pattern="[0-9]" id="otp5">
+                            <input type="text" class="otp-input" maxlength="1" pattern="[0-9]" id="otp6">
+                        </div>
+
+                        <!-- Timer -->
+                        <div class="timer" id="timer">
+                            <i class="fas fa-clock"></i>
+                            Time remaining: <span id="timeLeft">05:00</span>
+                        </div>
+
+                        <!-- Verify Button -->
+                        <button type="submit" class="register-btn" id="otpBtn">
+                            <div class="loading" id="otpLoading"></div>
+                            <i class="fas fa-check-circle"></i>
+                            <span id="otpBtnText">Verify & Complete Registration</span>
+                        </button>
+                    </form>
+
+                    <!-- Resend Section -->
+                    <div class="resend-section">
+                        <p>Didn't receive the code?</p>
+                        <button class="resend-btn" id="resendBtn" onclick="resendOTP()">
+                            <i class="fas fa-redo-alt"></i>
+                            Resend Code
+                        </button>
+                    </div>
+
+                    <div class="login-link">
+                        <span style="color: #ff6b35; cursor: pointer; font-weight: 500;" onclick="showRegisterForm()">
+                            <i class="fas fa-arrow-left"></i> Change Details
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="static/js/register.js"></script>
+      
+    
+</body>
+</html>
