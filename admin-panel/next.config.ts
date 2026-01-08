@@ -1,9 +1,11 @@
-import type { NextConfig } from 'next';
+import type { NextConfig } from "next"
 
 const nextConfig: NextConfig = {
-  basePath: '/v1/admin',
   reactStrictMode: true,
-};
+  output: "export",
 
-export default nextConfig;
+  // ❌ NO basePath locally
+  // ❌ NO assetPrefix locally
+}
 
+export default nextConfig

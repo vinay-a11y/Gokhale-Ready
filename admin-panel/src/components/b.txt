@@ -1,0 +1,237 @@
+"use client"
+
+import { useEffect, useState } from "react"
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts"
+import {
+  DollarSign,
+  Users,
+  ShoppingCart,
+  Package,
+  RefreshCw,
+  Calendar,
+} from "lucide-react"
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
+import { useToast } from "@/hooks/use-toast"
+
+import type {
+  DashboardSummary,
+  RevenuePoint,
+  TopProduct,
+  CategoryData,
+} from "@/types/admin"
+
+const COLORS = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6"]
+
+export default function Dashboard() {
+  const [period, setPeriod] = useState<"weekly" | "monthly" | "yearly">("monthly")
+  const [loading, setLoading] = useState(false)
+
+  const [summary, setSummary] = useState<DashboardSummary | null>(null)
+  const [revenue, setRevenue] = useState<RevenuePoint[]>([])
+  const [topProducts, setTopProducts] = useState<TopProduct[]>([])
+  const [categories, setCategories] = useState<CategoryData[]>([])
+
+  const { toast } = useToast()
+
+  const loadDashboard = async () => {
+    try {
+      setLoading(true)
+
+      const [
+        summaryRes,
+        revenueRes,
+        topRes,
+        categoryRes,
+      ] = await Promise.all([
+        fetch("http://localhost:8000/api/admin/dashboard/summary"),
+   fetch(`http://localhost:8000/api/admin/dashboard/revenue?period=${period}`),
+  fetch("http://localhost:8000/api/admin/dashboard/top-products"),
+  fetch("http://localhost:8000/api/admin/dashboard/categories"),
+      ])
+
+      if (!summaryRes.ok || !revenueRes.ok || !topRes.ok || !categoryRes.ok) {
+        throw new Error("Failed to load dashboard data")
+      }
+
+      setSummary(await summaryRes.json())
+      setRevenue(await revenueRes.json())
+      setTopProducts(await topRes.json())
+      setCategories(await categoryRes.json())
+
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: "Failed to load dashboard data",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadDashboard()
+  }, [period])
+
+  if (!summary) {
+    return (
+      <div className="flex items-center justify-center h-[60vh] text-slate-600">
+        Loading dashboard…
+      </div>
+    )
+  }
+
+  const activeProducts = categories.reduce<number>((sum, c) => sum + c.value, 0)
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6 space-y-6">
+
+      {/* HEADER */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900">Business Dashboard</h1>
+          <p className="text-slate-600">Overview of your business performance</p>
+        </div>
+
+        <div className="flex gap-3">
+          <Select value={period} onValueChange={(v) => setPeriod(v as any)}>
+            <SelectTrigger className="w-40">
+              <Calendar className="h-4 w-4 mr-2" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="weekly">Weekly</SelectItem>
+              <SelectItem value="monthly">Monthly</SelectItem>
+              <SelectItem value="yearly">Yearly</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Button variant="outline" onClick={loadDashboard} disabled={loading}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+        </div>
+      </div>
+
+      {/* STATS */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Stat title="Total Revenue" value={`₹${summary.total_revenue.toLocaleString()}`} icon={DollarSign} />
+        <Stat title="Total Orders" value={summary.total_orders} icon={ShoppingCart} />
+        <Stat title="Total Customers" value={summary.total_customers} icon={Users} />
+        <Stat title="Active Products" value={activeProducts} icon={Package} />
+      </div>
+
+      {/* CHARTS */}
+      <div className="grid grid-cols-1 lg:grid-cols-7 gap-6">
+        <Card className="lg:col-span-4">
+          <CardHeader>
+            <CardTitle>Revenue Overview</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={320}>
+              <AreaChart data={revenue}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey={(d) => d.month || d.date || d.year} />
+                <YAxis />
+                <Tooltip formatter={(v) => `₹${v}`} />
+                <Area
+                  type="monotone"
+                  dataKey="revenue"
+                  stroke="#3B82F6"
+                  fill="#3B82F6"
+                  fillOpacity={0.25}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card className="lg:col-span-3">
+          <CardHeader>
+            <CardTitle>Products by Category</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={320}>
+              <PieChart>
+                <Pie
+                  data={categories}
+                  dataKey="value"
+                  nameKey="name"
+                  outerRadius={110}
+                  label={({ name, percent = 0 }) =>
+                    `${name} ${Math.round(percent * 100)}%`
+                  }
+                >
+                  {categories.map((_, i) => (
+                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* TOP PRODUCTS */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Top Products</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {topProducts.length ? (
+            topProducts.map((p, i) => (
+              <div key={p.name} className="flex justify-between p-4 bg-slate-50 rounded">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-blue-600 text-white flex items-center justify-center rounded-full">
+                    {i + 1}
+                  </div>
+                  <div>
+                    <p className="font-medium">{p.name}</p>
+                    <p className="text-sm text-slate-500">{p.sales} units sold</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="font-semibold">₹{p.revenue.toLocaleString()}</p>
+                  <Badge>High Demand</Badge>
+                </div>
+              </div>
+            ))
+          ) : (
+            <p className="text-center text-slate-500 py-6">
+              No sales data available
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+    </div>
+  )
+}
+
+function Stat({ title, value, icon: Icon }: any) {
+  return (
+    <Card className="shadow-lg">
+      <CardHeader className="flex justify-between">
+        <CardTitle className="text-sm">{title}</CardTitle>
+        <Icon className="h-4 w-4 text-slate-500" />
+      </CardHeader>
+      <CardContent className="text-2xl font-bold">{value}</CardContent>
+    </Card>
+  )
+}

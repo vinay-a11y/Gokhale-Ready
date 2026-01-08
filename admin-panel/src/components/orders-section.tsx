@@ -15,7 +15,7 @@ const CONFIG = {
   ORDERS_PER_PAGE: 20,
   RECENT_DAYS_FILTER: 10,
   SEARCH_DEBOUNCE_DELAY: 300,
-  API_BASE_URL: "http://localhost:8000/api/admin/orders",
+  API_BASE_URL: "http://gokhalebandhu.com/api/admin/orders",
   AUTO_REFRESH_INTERVAL: 30000,
 }
 
@@ -186,8 +186,8 @@ const response = await fetch("http://localhost:8000/api/admin/orders", {
     const rows = filteredOrders.map((order) => [
       order.id,
       order.razorpay_order_id,
-      order.name || "",
-      order.phone || "",
+      order.first_name|| "",
+      order.mobile_number || "",
       formatDate(order.created_at),
       order.total_amount,
       order.order_status,
@@ -314,8 +314,8 @@ const response = await fetch("http://localhost:8000/api/admin/orders", {
         (order) =>
           order.id.toString().includes(query) ||
           order.razorpay_order_id?.toLowerCase().includes(query) ||
-          (order.name && order.name.toLowerCase().includes(query)) ||
-          (order.phone && order.phone.toLowerCase().includes(query)),
+          (order.first_name && order.first_name.toLowerCase().includes(query)) ||
+          (order.mobile_number && order.mobile_number.toLowerCase().includes(query)),
       ) 
     }
 

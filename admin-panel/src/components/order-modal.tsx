@@ -73,11 +73,11 @@ export function OrderModal({ order, onClose }: OrderModalProps) {
                 </div>
                 <div className="bg-gradient-to-r from-emerald-50 to-emerald-100 p-4 rounded-xl border border-emerald-200">
                   <strong className="text-slate-700">Customer:</strong>
-                  <div className="text-slate-900">{order.name || "N/A"}</div>
+<div className="text-slate-900">{order.first_name ?? "N/A"}</div>
                 </div>
                 <div className="bg-gradient-to-r from-orange-50 to-orange-100 p-4 rounded-xl border border-orange-200">
                   <strong className="text-slate-700">Phone:</strong>
-                  <div className="text-slate-900">{order.phone || "N/A"}</div>
+<div className="text-slate-900">{order.mobile_number ?? "N/A"}</div>
                 </div>
                 <div className="bg-gradient-to-r from-purple-50 to-purple-100 p-4 rounded-xl border border-purple-200">
                   <strong className="text-slate-700">Status:</strong>
