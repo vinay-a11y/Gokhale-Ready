@@ -19,7 +19,19 @@ interface EditProductModalProps {
   onClose: () => void
   onSuccess: () => void
 }
+export const adminFetch = (url: string, options: RequestInit = {}) => {
+  const token = localStorage.getItem("adminToken")
 
+  return fetch(url, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+      ...(options.headers || {}),
+    },
+    cache: "no-store",
+  })
+}
 export function EditProductModal({ isOpen, product, onClose, onSuccess }: EditProductModalProps) {
   const [formData, setFormData] = useState({
     item_name: "",
@@ -82,67 +94,76 @@ export function EditProductModal({ isOpen, product, onClose, onSuccess }: EditPr
       price_04: "",
     })
   }
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault()
+  if (!product) return
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!product) return
+  setLoading(true)
 
-    setLoading(true)
+  try {
+    const productData = {
+      item_name: formData.item_name.trim(),
+      category: formData.category?.trim() || null,
+      description: formData.description?.trim() || null,
+      shelf_life_days: Number(formData.shelf_life_days) || 30,
+      lead_time_days: Number(formData.lead_time_days) || 1,
+      imagesrc: formData.imagesrc?.trim() || null,
 
-    try {
-      const productData = {
-        item_name: formData.item_name,
-        category: formData.category,
-        description: formData.description,
-        shelf_life_days: formData.shelf_life_days,
-        lead_time_days: formData.lead_time_days,
-        imagesrc: formData.imagesrc,
-        packing_01: formData.packing_01 || null,
-        price_01: formData.price_01 ? Number.parseFloat(formData.price_01) : null,
-        packing_02: formData.packing_02 || null,
-        price_02: formData.price_02 ? Number.parseFloat(formData.price_02) : null,
-        packing_03: formData.packing_03 || null,
-        price_03: formData.price_03 ? Number.parseFloat(formData.price_03) : null,
-        packing_04: formData.packing_04 || null,
-        price_04: formData.price_04 ? Number.parseFloat(formData.price_04) : null,
-      }
+      packing_01: formData.packing_01 || null,
+      price_01: formData.price_01 ? Number(formData.price_01) : null,
 
-      console.log("Updating product:", product.id, productData)
+      packing_02: formData.packing_02 || null,
+      price_02: formData.price_02 ? Number(formData.price_02) : null,
 
-      const res = await fetch(`http://localhost:8000/api/products/${product.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(productData),
-      })
+      packing_03: formData.packing_03 || null,
+      price_03: formData.price_03 ? Number(formData.price_03) : null,
 
-      if (!res.ok) {
-        const errorData = await res.json()
-        throw new Error(errorData.detail || "Failed to update product")
-      }
-
-      const data = await res.json()
-      console.log("Product updated:", data)
-
-      toast({
-        title: "Success",
-        description: "Product updated successfully!",
-      })
-
-      onSuccess()
-      onClose()
-    } catch (error) {
-      console.error("Error updating product:", error)
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to update product",
-        variant: "destructive",
-      })
-    } finally {
-      setLoading(false)
+      packing_04: formData.packing_04 || null,
+      price_04: formData.price_04 ? Number(formData.price_04) : null,
     }
+
+    console.log("Updating product:", product.id, productData)
+
+    // ✅ CORRECT ADMIN ENDPOINT
+    const res = await adminFetch(`http://localhost:8000/api/admin/products/${product.id}`, {
+
+      method: "PUT",
+      body: JSON.stringify(productData),
+    })
+
+    // ✅ Guard against HTML responses
+    const contentType = res.headers.get("content-type") || ""
+    if (!contentType.includes("application/json")) {
+      throw new Error("Server returned invalid response")
+    }
+
+    if (!res.ok) {
+      const errorData = await res.json()
+      throw new Error(errorData.detail || "Failed to update product")
+    }
+
+    await res.json()
+
+    toast({
+      title: "Success",
+      description: "Product updated successfully!",
+    })
+
+    onSuccess()
+    onClose()
+  } catch (error) {
+    console.error("Error updating product:", error)
+    toast({
+      title: "Error",
+      description:
+        error instanceof Error ? error.message : "Failed to update product",
+      variant: "destructive",
+    })
+  } finally {
+    setLoading(false)
   }
+}
+
 
   const handleClose = () => {
     resetForm()

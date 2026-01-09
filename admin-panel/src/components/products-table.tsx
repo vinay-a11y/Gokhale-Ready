@@ -16,6 +16,29 @@ interface ProductsTableProps {
 }
 
 const PRODUCTS_PER_PAGE = 20
+export const adminFetch = async (
+  url: string,
+  options: RequestInit = {}
+) => {
+  const token =
+    typeof window !== "undefined"
+      ? localStorage.getItem("adminToken")
+      : null
+
+  if (!token) {
+    window.location.href = "/admin/login"
+    throw new Error("Admin not authenticated")
+  }
+
+  return fetch(url, {
+    ...options,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      ...(options.headers || {}),
+    },
+    cache: "no-store",
+  })
+}
 
 export function ProductsTable({
   products,
@@ -34,7 +57,10 @@ export function ProductsTable({
     if (!confirmed) return
 
     try {
-      const res = await fetch(`http://localhost:8000/api/products/${id}`, { method: "DELETE" })
+const res = await adminFetch(
+  `http://localhost:8000/api/products/${id}`,
+  { method: "DELETE" }
+)
       if (!res.ok) throw new Error("Delete failed")
 
       toast({ title: "Success", description: "Product deleted successfully!" })
@@ -47,7 +73,10 @@ export function ProductsTable({
 
   const handleToggleStatus = async (id: number, currentStatus: boolean) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/products/${id}/toggle`, { method: "PATCH" })
+const res = await adminFetch(
+  `http://localhost:8000/api/admin/products/${id}/toggle`,
+  { method: "PATCH" }
+)
       if (!res.ok) throw new Error("Toggle failed")
       const data = await res.json()
 

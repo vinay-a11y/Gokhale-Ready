@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
-import type { Order } from "@/types/orders"
 
 interface KitchenItem {
   name: string
@@ -17,195 +16,76 @@ interface KitchenItem {
   priority: "high" | "medium" | "low"
   estimatedPrepTime: number
 }
+export const adminFetch = async (
+  url: string,
+  options: RequestInit = {}
+) => {
+  const token =
+    typeof window !== "undefined"
+      ? localStorage.getItem("adminToken")
+      : null
+
+  if (!token) {
+    window.location.href = "/admin/login"
+    throw new Error("Admin not authenticated")
+  }
+
+  return fetch(url, {
+    ...options,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      ...(options.headers || {}),
+    },
+    cache: "no-store",
+  })
+}
 
 export function KitchenSection() {
   const [kitchenData, setKitchenData] = useState<KitchenItem[]>([])
   const [statusFilter, setStatusFilter] = useState("confirmed,inprocess")
   const [isLoading, setIsLoading] = useState(false)
-  const [orders, setOrders] = useState<Order[]>([])
 
   const { toast } = useToast()
 
-  const loadOrders = useCallback(
-    async (silent = false) => {
-      try {
-        if (!silent) setIsLoading(true)
-
-        const response = await fetch(" http://127.0.0.1:8000/api/admin/orders")
-        const fetchedOrders: Order[] = await response.json()
-
-        if (!response.ok || !Array.isArray(fetchedOrders)) {
-          throw new Error("Failed to fetch orders")
-        }
-
-        setOrders(fetchedOrders)
-
-        if (!silent) {
-          toast({
-            title: "Orders Loaded",
-            description: "Successfully fetched orders from backend",
-          })
-        }
-      } catch (error) {
-        console.error("Error fetching orders:", error)
-        if (!silent) {
-          toast({
-            title: "Error",
-            description: "Failed to load orders",
-            variant: "destructive",
-          })
-        }
-      } finally {
-        if (!silent) setIsLoading(false)
-      }
-    },
-    [toast],
-  )
-
-  // Helper function to convert package size to grams
-  const convertToGrams = (variant: string): number => {
-    const lowerVariant = variant.toLowerCase()
-
-    // Extract number from variant string
-    const numberMatch = lowerVariant.match(/(\d+(?:\.\d+)?)/)
-    if (!numberMatch) return 0
-
-    const number = Number.parseFloat(numberMatch[1])
-
-    // Check for units
-    if (lowerVariant.includes("kg")) {
-      return number * 1000 // Convert kg to grams
-    } else if (lowerVariant.includes("g")) {
-      return number // Already in grams
-    } else {
-      // If no unit specified, assume it's grams
-      return number
-    }
-  }
-
-  // Calculate kitchen preparation data
-  const calculateKitchenPrep = useCallback(
-    (orders: Order[]) => {
-      const statusFilters = statusFilter.split(",")
-      const activeOrders = orders.filter((order) => statusFilters.includes(order.order_status))
-
-      const itemMap = new Map<
-        string,
-        {
-          name: string
-          totalQuantity: number
-          totalWeight: number
-          orderCount: number
-          variants: Map<string, { quantity: number; weight: number }>
-          orders: Set<number>
-        }
-      >()
-
-      // Aggregate items from all active orders
-      activeOrders.forEach((order) => {
-        order.items.forEach((item) => {
-          const key = item.name
-          if (!itemMap.has(key)) {
-            itemMap.set(key, {
-              name: item.name,
-              totalQuantity: 0,
-              totalWeight: 0,
-              orderCount: 0,
-              variants: new Map(),
-              orders: new Set(),
-            })
-          }
-
-          const itemData = itemMap.get(key)!
-          itemData.totalQuantity += item.quantity
-          itemData.orders.add(order.id)
-          itemData.orderCount = itemData.orders.size
-
-          // Calculate weight based on variant
-          const variantWeight = convertToGrams(item.variant)
-          const totalItemWeight = variantWeight * item.quantity
-          itemData.totalWeight += totalItemWeight
-
-          // Track variants with their weights
-          const variantKey = item.variant
-          if (!itemData.variants.has(variantKey)) {
-            itemData.variants.set(variantKey, { quantity: 0, weight: 0 })
-          }
-          const variantData = itemData.variants.get(variantKey)!
-          variantData.quantity += item.quantity
-          variantData.weight += totalItemWeight
-        })
-      })
-
-      // Convert to array and add priority and prep time
-      return Array.from(itemMap.values()).map((item) => ({
-        name: item.name,
-        totalQuantity: item.totalQuantity,
-        totalWeight: item.totalWeight,
-        orderCount: item.orderCount,
-        variants: Array.from(item.variants.entries()).map(([variant, data]) => ({
-          variant,
-          quantity: data.quantity,
-          weight: data.weight,
-        })),
-        priority: calculatePriority(item.orderCount, item.totalWeight),
-        estimatedPrepTime: calculatePrepTime(item.totalWeight),
-      }))
-    },
-    [statusFilter],
-  )
-
-  const calculatePriority = (orderCount: number, totalWeight: number): "high" | "medium" | "low" => {
-    if (orderCount >= 3 || totalWeight >= 2000) return "high"
-    if (orderCount >= 2 || totalWeight >= 1000) return "medium"
-    return "low"
-  }
-
-  const calculatePrepTime = (totalWeight: number): number => {
-    const baseTime = Math.ceil(totalWeight / 100)
-    return Math.max(baseTime, 5) // Minimum 5 minutes
-  }
+ 
+ 
 
   // Load kitchen data
   const loadKitchenData = useCallback(
-    async (silent = false) => {
-      try {
-        if (!silent) setIsLoading(true)
+  async (silent = false) => {
+    try {
+      if (!silent) setIsLoading(true)
+const response = await adminFetch(
+  `http://localhost:8000/api/admin/kitchen-prep?status=${statusFilter}`
+)
 
-        const response = await fetch("http://127.0.0.1:8000/api/admin/orders")
-        const fetchedOrders: Order[] = await response.json()
+      const data: KitchenItem[] = await response.json()
 
-        if (!response.ok || !Array.isArray(fetchedOrders)) {
-          throw new Error("Failed to fetch orders")
-        }
-
-        setOrders(fetchedOrders)
-
-        // Now calculate kitchen prep data from the real orders
-        const prepData = calculateKitchenPrep(fetchedOrders)
-        setKitchenData(prepData)
-
-        if (!silent) {
-          toast({
-            title: "Success",
-            description: "Kitchen data calculated successfully",
-          })
-        }
-      } catch (error) {
-        console.error("Error calculating kitchen data:", error)
-        if (!silent) {
-          toast({
-            title: "Error",
-            description: "Failed to calculate kitchen data",
-            variant: "destructive",
-          })
-        }
-      } finally {
-        if (!silent) setIsLoading(false)
+      if (!response.ok || !Array.isArray(data)) {
+        throw new Error("Failed to fetch kitchen prep")
       }
-    },
-    [calculateKitchenPrep, toast],
-  )
+
+      setKitchenData(data)
+
+      if (!silent) {
+        toast({
+          title: "Success",
+          description: "Kitchen prep loaded",
+        })
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load kitchen prep",
+        variant: "destructive",
+      })
+    } finally {
+      if (!silent) setIsLoading(false)
+    }
+  },
+  [statusFilter, toast],
+)
+
 
   // Export kitchen data
   const exportKitchenData = () => {
@@ -249,7 +129,11 @@ export function KitchenSection() {
 
   // Calculate statistics
   const stats = {
-    activeOrders: orders.filter((order) => statusFilter.split(",").includes(order.order_status)).length,
+activeOrders: kitchenData.reduce(
+  (sum, item) => sum + item.orderCount,
+  0
+),
+
     totalWeight: kitchenData.reduce((sum, item) => sum + item.totalWeight, 0),
     uniqueItems: kitchenData.length,
     highPriorityItems: kitchenData.filter((item) => item.priority === "high").length,
@@ -260,12 +144,7 @@ export function KitchenSection() {
     loadKitchenData()
   }, [loadKitchenData])
 
-  useEffect(() => {
-    if (orders.length > 0) {
-      const prepData = calculateKitchenPrep(orders)
-      setKitchenData(prepData)
-    }
-  }, [statusFilter, orders, calculateKitchenPrep])
+
 
   const getPriorityBadge = (priority: "high" | "medium" | "low") => {
     const variants = {
@@ -299,7 +178,7 @@ export function KitchenSection() {
 
             {/* Stats Cards */}
             <div className="flex gap-4">
-              <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white p-4 rounded-xl shadow-lg min-w-[120px]">
+              {/* <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white p-4 rounded-xl shadow-lg min-w-[120px]">
                 <div className="flex items-center gap-2">
                   <Flame className="h-5 w-5 opacity-80" />
                   <div>
@@ -307,7 +186,7 @@ export function KitchenSection() {
                     <div className="text-xs opacity-90">Active Orders</div>
                   </div>
                 </div>
-              </div>
+              </div> */}
 
               <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white p-4 rounded-xl shadow-lg min-w-[120px]">
                 <div className="flex items-center gap-2">

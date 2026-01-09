@@ -18,7 +18,19 @@ interface AddProductModalProps {
   onClose: () => void
   onSuccess: () => void
 }
+export const adminFetch = (url: string, options: RequestInit = {}) => {
+  const token = localStorage.getItem("adminToken")
 
+  return fetch(url, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+      ...(options.headers || {}),
+    },
+    cache: "no-store",
+  })
+}
 export function AddProductModal({ isOpen, onClose, onSuccess }: AddProductModalProps) {
   const [formData, setFormData] = useState({
     item_name: "",
@@ -82,7 +94,7 @@ export function AddProductModal({ isOpen, onClose, onSuccess }: AddProductModalP
 
       console.log("Sending product data:", productData)
 
-      const res = await fetch("http://localhost:8000/api/products/add", {
+      const res = await adminFetch("http://localhost:8000/api/admin/products/add", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

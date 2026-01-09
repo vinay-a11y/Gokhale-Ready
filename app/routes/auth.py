@@ -6,9 +6,10 @@ from uuid import uuid4
 from passlib.context import CryptContext
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
-from fastapi.security import OAuth2PasswordBearer
 import os
 from dotenv import load_dotenv
+
+from fastapi import Cookie
 
 from app.database.session import get_db
 from app.models.user import User
@@ -23,7 +24,7 @@ router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 
 # JWT CONFIG
-SECRET_KEY = os.getenv("SECRET_KEY", "7f93a5057e4e460c975234a0529a6919a3282d1f429dc1e42e99aee3498296ef")
+SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 60))
 
@@ -31,7 +32,6 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 60))
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # OAuth2
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 def hash_password(password: str) -> str:
     return pwd_context.hash(password)
@@ -45,23 +45,28 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
+def get_current_user(
+    access_token: str | None = Cookie(default=None),
+    db: Session = Depends(get_db)
+):
+    if not access_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated"
+        )
+
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(access_token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id: str = payload.get("sub")
-        if user_id is None:
-            raise credentials_exception
+        if not user_id:
+            raise HTTPException(status_code=401, detail="Invalid token")
     except JWTError:
-        raise credentials_exception
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
 
     user = db.query(User).filter(User.id == int(user_id)).first()
-    if user is None:
-        raise credentials_exception
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+
     return user
 
 # ================== ROUTES ================== #
@@ -155,63 +160,68 @@ def reset_password(req: ResetPasswordRequest, db: Session = Depends(get_db)):
 # ================== ADDRESS ROUTES ================== #
 
 @router.get("/api/user/addresses")
-def get_user_saved_address(id: int, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.id == id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    addresses = user.address if user.address else []
-    return JSONResponse(content={"addresses": addresses, "count": len(addresses)})
+def get_user_saved_address(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    addresses = current_user.address or []
+    return {
+        "addresses": addresses,
+        "count": len(addresses)
+    }
 
 @router.post("/api/user/address")
-async def save_user_address(payload: UserAddressUpdate, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.id == payload.id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    if user.address is None:
-        user.address = []
+async def save_user_address(
+    payload: UserAddressUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.address is None:
+        current_user.address = []
 
     new_address = payload.address.model_dump()
 
     is_duplicate = any(
-        addr.get("line1") == new_address.get("line1") and 
+        addr.get("line1") == new_address.get("line1") and
         addr.get("pincode") == new_address.get("pincode")
-        for addr in user.address
+        for addr in current_user.address
     )
     if is_duplicate:
-        return JSONResponse(content={"message": "Address already exists", "addresses": user.address})
+        return {"message": "Address already exists"}
 
-    user.address.append(new_address)
-    flag_modified(user, "address")
-    db.commit()
-    db.refresh(user)
-    return JSONResponse(content={"message": "Address saved successfully", "addresses": user.address})
-
-@router.delete("/api/user/address")
-async def delete_user_address(address_id: int, user_id: int, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    user.address = [addr for addr in user.address if addr.get("id") != address_id]
-    flag_modified(user, "address")
+    current_user.address.append(new_address)
+    flag_modified(current_user, "address")
     db.commit()
 
-    return JSONResponse(content={"message": "Address deleted successfully"})
+    return {"message": "Address saved successfully"}
+
+@router.delete("/api/user/address/{address_id}")
+async def delete_user_address(
+    address_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    current_user.address = [
+        addr for addr in current_user.address
+        if addr.get("id") != address_id
+    ]
+    flag_modified(current_user, "address")
+    db.commit()
+
+    return {"message": "Address deleted successfully"}
 
 @router.put("/api/user/address/{address_id}")
-async def update_user_address(address_id: int, address: Address, user_id: int, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    for i, addr in enumerate(user.address or []):
+async def update_user_address(
+    address_id: int,
+    address: Address,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    for i, addr in enumerate(current_user.address or []):
         if addr.get("id") == address_id:
-            user.address[i] = address.model_dump()
-            flag_modified(user, "address")
+            current_user.address[i] = address.model_dump()
+            flag_modified(current_user, "address")
             db.commit()
-            return JSONResponse(content={"message": "Address updated successfully"})
+            return {"message": "Address updated successfully"}
 
     raise HTTPException(status_code=404, detail="Address not found")
-

@@ -37,13 +37,8 @@ app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:8000",
-        "http://127.0.0.1:8000",
-        "http://192.168.0.237:8000",
-        "http://139.59.2.94:8000",
-        "http://139.59.2.94:3000",
-        "http://139.59.2.94",
         "http://localhost:3000",
+        "http://127.0.0.1:3000",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -63,7 +58,6 @@ app.include_router(auth.router)
 app.include_router(products.router)
 app.include_router(cart.router)
 app.include_router(payment.router)
-app.include_router(otp.router)
 app.include_router(admins.router)
 app.include_router(admins_ops_router)
 

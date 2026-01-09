@@ -89,6 +89,36 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Then fetch updates in background
   fetchCartFromBackend()
 })
+// ✅ Universal authenticated fetch (User)
+async function authFetch(url, options = {}) {
+  const token = localStorage.getItem("token") || localStorage.getItem("userToken")
+
+  const headers = {
+    "Content-Type": "application/json",
+    ...(options.headers || {}),
+  }
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`
+  }
+
+  const response = await fetch(url, {
+    ...options,
+    headers,
+    credentials: "include", // optional, safe for cookies
+  })
+
+  // Optional auto logout on auth failure
+  if (response.status === 401) {
+    showToast("Session expired. Please login again.", "error")
+    localStorage.removeItem("token")
+    localStorage.removeItem("user")
+    setTimeout(() => (window.location.href = "/login"), 1500)
+    throw new Error("Unauthorized")
+  }
+
+  return response
+}
 
 function loadCartFromStorage() {
   try {
@@ -127,7 +157,7 @@ async function loadUserDetails() {
 
 async function loadSavedAddresses() {
   try {
-    const response = await fetch(`/api/user/addresses?id=${userDetails.id}`, {
+    const response = await authFetch(`/api/user/addresses?id=${userDetails.id}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -168,7 +198,7 @@ async function loadSavedAddresses() {
 
 async function fetchCartFromBackend() {
   try {
-    const response = await fetch("/cart")
+    const response = await authFetch("/cart")
     const contentType = response.headers.get("content-type")
 
     if (!contentType || !contentType.includes("application/json")) {
@@ -209,10 +239,10 @@ function renderCart() {
   }
 
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
-  const savings = cart.reduce(
-    (sum, item) => sum + ((item.original_price || item.price + 20) - item.price) * item.quantity,
-    0,
-  )
+  // const savings = cart.reduce(
+  //   (sum, item) => sum + ((item.original_price || item.price + 20) - item.price) * item.quantity,
+  //   0,
+  // )
   const shipping = subtotal >= 1800 ? 0 : 90
   const total = subtotal + shipping
   const isReadyForCheckout = selectedAddress !== null
@@ -252,11 +282,7 @@ function renderCart() {
               <div class="item-controls">
                 <div class="item-pricing">
                   <div class="item-price">₹${(item.price * item.quantity).toFixed(2)}</div>
-                  ${
-                    item.original_price && item.original_price > item.price
-                      ? `<div class="item-savings">₹${((item.original_price - item.price) * item.quantity).toFixed(2)} saved</div>`
-                      : ""
-                  }
+                  
                 </div>
 
                 <div class="quantity-controls">
@@ -317,16 +343,7 @@ function renderCart() {
           </span>
         </div>
 
-        ${
-          savings > 0
-            ? `
-        <div class="summary-row savings-row">
-          <span>You Save</span>
-          <span class="amount savings">-₹${savings.toFixed(2)}</span>
-        </div>
-      `
-            : ""
-        }
+       
 
         <div class="summary-row total">
           <span>Total</span>
@@ -453,7 +470,7 @@ async function addToCart(productId, productData) {
       return
     }
 
-    const response = await fetch("/cart/add", {
+    const response = await authFetch("/cart/add", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -752,7 +769,7 @@ async function deleteAddress(index) {
     const address = savedAddresses[index]
     if (!address) return
 
-    const response = await fetch(`/api/user/address`, {
+    const response = await authFetch(`/api/user/address/${address.id}`, {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
@@ -819,7 +836,7 @@ async function proceedToCheckout() {
       orderDate: new Date().toISOString(),
     }
 
-    const res = await fetch("/create-order/", {
+    const res = await authFetch("/create-order/", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -843,7 +860,7 @@ async function proceedToCheckout() {
       order_id: data.order_id,
       handler: async (response) => {
         try {
-          const verifyRes = await fetch("/verify-payment/", {
+          const verifyRes = await authFetch("/verify-payment/", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",

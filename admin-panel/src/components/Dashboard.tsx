@@ -43,6 +43,19 @@ import type {
 
 const COLORS = ["#2563EB", "#16A34A", "#F59E0B", "#DC2626", "#7C3AED"]
 
+export const adminFetch = (url: string, options: RequestInit = {}) => {
+  const token = localStorage.getItem("adminToken")
+
+  return fetch(url, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+      ...(options.headers || {}),
+    },
+    cache: "no-store",
+  })
+}
 export default function Dashboard() {
   const [period, setPeriod] = useState<"weekly" | "monthly" | "yearly">("monthly")
   const [loading, setLoading] = useState(false)
@@ -63,21 +76,17 @@ const loadDashboard = async () => {
       topRes,
       categoryRes,
     ] = await Promise.all([
-      fetch(
-        `http://localhost:8000/api/admin/dashboard/summary?period=${period}`,
-        { cache: "no-store" }
+      adminFetch(
+        `http://localhost:8000/api/admin/dashboard/summary?period=${period}`
       ),
-      fetch(
-        `http://localhost:8000/api/admin/dashboard/revenue?period=${period}`,
-        { cache: "no-store" }
+      adminFetch(
+        `http://localhost:8000/api/admin/dashboard/revenue?period=${period}`
       ),
-      fetch(
-        "http://localhost:8000/api/admin/dashboard/top-products",
-        { cache: "no-store" }
+      adminFetch(
+        "http://localhost:8000/api/admin/dashboard/top-products"
       ),
-      fetch(
-        "http://localhost:8000/api/admin/dashboard/categories",
-        { cache: "no-store" }
+      adminFetch(
+        "http://localhost:8000/api/admin/dashboard/categories"
       ),
     ])
 
@@ -90,27 +99,23 @@ const loadDashboard = async () => {
       throw new Error("Failed to load dashboard data")
     }
 
-    const summaryData = await summaryRes.json()
-    const revenueData = await revenueRes.json()
-    const topProductsData = await topRes.json()
-    const categoriesData = await categoryRes.json()
-
-    setSummary(summaryData)
-    setRevenue(revenueData)
-    setTopProducts(topProductsData)
-    setCategories(categoriesData)
+    setSummary(await summaryRes.json())
+    setRevenue(await revenueRes.json())
+    setTopProducts(await topRes.json())
+    setCategories(await categoryRes.json())
 
   } catch (error) {
     console.error("Dashboard load error:", error)
     toast({
       title: "Error",
-      description: "Failed to load dashboard data",
+      description: "Session expired. Please login again.",
       variant: "destructive",
     })
   } finally {
     setLoading(false)
   }
 }
+
 
 
   useEffect(() => {

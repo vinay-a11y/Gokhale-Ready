@@ -1,44 +1,53 @@
-# main.py
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import (
+    APIRouter,
+    HTTPException,
+    Request,
+    Depends,
+    status,
+)
 from fastapi.templating import Jinja2Templates
-from fastapi import Depends
-from sqlalchemy.orm import Session
+from fastapi.responses import HTMLResponse
+from sqlalchemy.orm import Session, joinedload
+from datetime import datetime
+import razorpay
+import os
+
 from app.database.session import get_db
 from app.models.orders import Order
-from app.schemas.orders import OrderCreateSchema  
-import razorpay
-from sqlalchemy.orm import joinedload
 from app.models.user import User
-from fastapi.responses import HTMLResponse , RedirectResponse
-# from fastapi import RedirectResponse
-from fastapi import Request
-from datetime import datetime
-import os
+from app.routes.auth import get_current_user  # ✅ JWT auth
+
+from dotenv import load_dotenv
+load_dotenv()
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 
-# Allow frontend access (adjust for your frontend domain)
+# Razorpay config
+RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID")
+RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET")
 
+if not RAZORPAY_KEY_ID or not RAZORPAY_KEY_SECRET:
+    raise RuntimeError("Razorpay keys not configured")
 
-# Razorpay test keys
-RAZORPAY_KEY_ID = "rzp_test_m5j63eVkzEwHxa"
-RAZORPAY_KEY_SECRET = "45ZCZTvLVb2GjiKo2n9meKTB"
-
-# Razorpay client
 razorpay_client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
 
 
+# --------------------------------------------------
+# CREATE ORDER (JWT REQUIRED)
+# --------------------------------------------------
 @router.post("/create-order/")
-async def create_order(data: dict):
-    try:
-        amount = data.get("amount")
-        if not amount:
-            raise HTTPException(status_code=400, detail="Amount is required")
+async def create_order(
+    data: dict,
+    current_user: User = Depends(get_current_user),
+):
+    amount = data.get("amount")
+    if not amount:
+        raise HTTPException(status_code=400, detail="Amount is required")
 
-        amount_in_paise = int(amount * 100)
-        print("Amount in paise:", amount_in_paise)
-        # Create Razorpay order
+    amount_in_paise = int(amount * 100)
+
+    try:
         payment = razorpay_client.order.create({
             "amount": amount_in_paise,
             "currency": "INR",
@@ -47,141 +56,139 @@ async def create_order(data: dict):
 
         return {
             "order_id": payment["id"],
-            "key": RAZORPAY_KEY_ID
+            "key": RAZORPAY_KEY_ID,
         }
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    
+
+
+# --------------------------------------------------
+# VERIFY PAYMENT & CREATE DB ORDER (JWT REQUIRED)
+# --------------------------------------------------
 @router.post("/verify-payment/")
-async def verify_payment(request: Request, db: Session = Depends(get_db)):
+async def verify_payment(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    data = await request.json()
+
+    # Verify Razorpay signature
     try:
-        data = await request.json()
-        print("Received payment data:", data)
+        razorpay_client.utility.verify_payment_signature({
+            "razorpay_order_id": data["order_id"],
+            "razorpay_payment_id": data["payment_id"],
+            "razorpay_signature": data["signature"],
+        })
+    except razorpay.errors.SignatureVerificationError:
+        raise HTTPException(status_code=400, detail="Invalid payment signature")
 
-        # Razorpay signature verification
-        params_dict = {
-            'razorpay_order_id': data['order_id'],
-            'razorpay_payment_id': data['payment_id'],
-            'razorpay_signature': data['signature']
-        }
+    delivery_date = data.get("delivery_date")
+    items = data.get("items")
+    address = data.get("delivery_address")
+    total_amount = data.get("amount")
 
-        try:
-            razorpay_client.utility.verify_payment_signature(params_dict)
-        except razorpay.errors.SignatureVerificationError:
-            raise HTTPException(status_code=400, detail="Invalid Razorpay signature.")
+    if not all([items, address, total_amount]):
+        raise HTTPException(status_code=400, detail="Missing order fields")
 
-        # Extracting order data
-        user = data.get("user_details")
-        if user:
-            user_deets = db.query(User).filter(User.id == user["id"]).first()
-        address = data.get("delivery_address")
-        items = data.get("items")
-        total_amount = data.get("amount")
-        delivery_date = data.get("delivery_date")  # <-- Step 2: Extract delivery date
-
-        if not all([user, address, items, total_amount, delivery_date]):
-            raise HTTPException(status_code=400, detail="Missing order fields.")
-
-        print("User:", user)
-
-        # Step 3: Create order with delivery_date
-        new_order = Order(
-            user_id=user["id"],
-            first_name=user_deets.first_name,  # store snapshot of name
-            mobile_number=user_deets.mobile_number,  # store snapshot of phone
-            address=address,
-            items=items,
-            total_amount=total_amount,
-            razorpay_order_id=data["order_id"],
-            order_status="placed",
-            delivery_date=datetime.strptime(delivery_date, "%Y-%m-%d") if delivery_date else None,
-            created_at=datetime.now(),
-        )
-
-        db.add(new_order)
-        db.commit()
-        db.refresh(new_order)
-        return {"status": "success", "order_id": new_order.id}
-
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        print("Unexpected error:", str(e))
-        raise HTTPException(status_code=500, detail="Internal Server Error")
-
-
-@router.get("/orders.html", response_class=HTMLResponse)
-def orders_page(request: Request):
-     if request.cookies.get("logged_in") != "true":
-      return RedirectResponse(url="/login", status_code=302)
-     return templates.TemplateResponse("orders.html", {"request": request})
-
-
-
-@router.get("/api/orders")
-async def get_order_details(user_id: int, db: Session = Depends(get_db)):
-    orders = (
-        db.query(Order)
-        .options(joinedload(Order.user))  # This preloads the related User
-        .filter(Order.user_id == user_id)
-        .all()
+    new_order = Order(
+        user_id=current_user.id,
+        first_name=current_user.first_name,
+        mobile_number=current_user.mobile_number,
+        address=address,
+        items=items,
+        total_amount=total_amount,
+        razorpay_order_id=data["order_id"],
+        order_status="placed",
+        delivery_date=datetime.strptime(delivery_date, "%Y-%m-%d") if delivery_date else None,
+        created_at=datetime.utcnow(),
     )
 
-    if not orders:
-        return {
-            "data": [],
-            "message": "No orders found"
-        }
-
-    order_list = []
-    for order in orders:
-        order_data = {
-            "id": order.id,
-            "razorpay_order_id": order.razorpay_order_id,
-            "user_id": order.user_id,
-            "name": f"{order.user.first_name} {order.user.last_name}".strip() if order.user else None,
-            "phone": order.user.mobile_number if order.user else None,
-            "delivery_date": order.delivery_date.isoformat() if order.delivery_date else None,
-            "total_amount": float(order.total_amount) if order.total_amount else 0.0,
-            "order_status": order.order_status,
-            "created_at": order.created_at.isoformat() if order.created_at else None,
-            "items": order.items if order.items else [],
-            "address": order.address if order.address else {}
-        }
-        order_list.append(order_data)
+    db.add(new_order)
+    db.commit()
+    db.refresh(new_order)
 
     return {
-        "data": order_list,
-        "message": "Orders fetched successfully"
+        "status": "success",
+        "order_id": new_order.id,
     }
 
 
+# --------------------------------------------------
+# ORDERS PAGE (JWT REQUIRED)
+# --------------------------------------------------
+@router.get("/orders.html", response_class=HTMLResponse)
+def orders_page(
+    request: Request,
+):
+    return templates.TemplateResponse(
+        "orders.html",
+        {"request": request},
+    )
+
+
+# --------------------------------------------------
+# GET USER ORDERS (JWT REQUIRED)
+# --------------------------------------------------
+@router.get("/api/orders")
+async def get_orders(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    orders = (
+        db.query(Order)
+        .options(joinedload(Order.user))
+        .filter(Order.user_id == current_user.id)
+        .order_by(Order.created_at.desc())
+        .all()
+    )
+
+    return {
+        "data": [
+            {
+                "id": o.id,
+                "razorpay_order_id": o.razorpay_order_id,
+                "delivery_date": o.delivery_date.isoformat() if o.delivery_date else None,
+                "total_amount": float(o.total_amount),
+                "order_status": o.order_status,
+                "created_at": o.created_at.isoformat(),
+                "items": o.items,
+                "address": o.address,
+            }
+            for o in orders
+        ],
+        "message": "Orders fetched successfully",
+    }
+
+
+# --------------------------------------------------
+# CANCEL ORDER (JWT REQUIRED)
+# --------------------------------------------------
 @router.patch("/cancel-order/{order_id}")
-async def cancel_order(order_id: int, db: Session = Depends(get_db)):
-    try:
-        # Fetch the order by ID
-        order = db.query(Order).filter(Order.id == order_id).first()
-        if not order:
-            raise HTTPException(status_code=404, detail="Order not found")
+async def cancel_order(
+    order_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    order = db.query(Order).filter(
+        Order.id == order_id,
+        Order.user_id == current_user.id
+    ).first()
 
-        # Only allow cancellation if order is placed or confirmed
-        if order.order_status not in ["placed", "confirmed"]:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Cannot cancel an order that is {order.order_status}"
-            )
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
 
-        # Update order status to cancelled
-        order.order_status = "cancelled"
-        db.commit()
-        db.refresh(order)
+    if order.order_status not in ["placed", "confirmed"]:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot cancel order in '{order.order_status}' state",
+        )
 
-        return {"status": "success", "order_id": order.id, "message": "Order cancelled successfully"}
+    order.order_status = "cancelled"
+    db.commit()
 
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        print("Unexpected error:", str(e))
-        raise HTTPException(status_code=500, detail="Internal Server Error")
-
+    return {
+        "status": "success",
+        "message": "Order cancelled successfully",
+    }

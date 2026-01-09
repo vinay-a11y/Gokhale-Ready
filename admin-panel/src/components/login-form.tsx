@@ -32,85 +32,107 @@ export function LoginForm({ onLoginSuccess, onBack }: LoginFormProps) {
   const [changePasswordLoading, setChangePasswordLoading] = useState(false)
   const [changePasswordMessage, setChangePasswordMessage] = useState("")
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError("")
+const handleSubmit = async (e: FormEvent) => {
+  e.preventDefault()
+  setIsLoading(true)
+  setError("")
 
-    try {
-      const response = await fetch("http://localhost:8000/api/admins_ops/login", {
+  try {
+    const response = await fetch(
+      "http://localhost:8000/api/admins_ops/login",
+      {
         method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
         body: new URLSearchParams({ email, password }),
-      })
-
-      if (!response.ok) {
-        const err = await response.json()
-        throw new Error(err.detail || "Login failed")
       }
+    )
 
-      const data = await response.json()
-      onLoginSuccess(data.email, data.token)
-      localStorage.setItem("adminToken", data.token)
-    } catch (err: any) {
-      setError(err.message)
-    } finally {
-      setIsLoading(false)
+    const data = await response.json()
+
+    if (!response.ok) {
+      throw new Error(data.detail || "Login failed")
     }
+
+    // ✅ FIX: correct token key
+    localStorage.setItem("adminToken", data.access_token)
+
+    onLoginSuccess(data.email, data.access_token)
+  } catch (err: any) {
+    setError(err.message)
+  } finally {
+    setIsLoading(false)
+  }
+}
+
+
+ const handleChangePassword = async (e: FormEvent) => {
+  e.preventDefault()
+  setChangePasswordLoading(true)
+  setChangePasswordMessage("")
+  setError("")
+
+  if (newPassword !== confirmPassword) {
+    setError("New passwords do not match")
+    setChangePasswordLoading(false)
+    return
   }
 
-  const handleChangePassword = async (e: FormEvent) => {
-    e.preventDefault()
-    setChangePasswordLoading(true)
-    setChangePasswordMessage("")
-    setError("")
+  if (newPassword.length < 6) {
+    setError("New password must be at least 6 characters long")
+    setChangePasswordLoading(false)
+    return
+  }
 
-    if (newPassword !== confirmPassword) {
-      setError("New passwords do not match")
-      setChangePasswordLoading(false)
-      return
+  try {
+    const token = localStorage.getItem("adminToken")
+
+    if (!token) {
+      throw new Error("Admin not logged in")
     }
 
-    if (newPassword.length < 6) {
-      setError("New password must be at least 6 characters long")
-      setChangePasswordLoading(false)
-      return
-    }
-
-    try {
-      const response = await fetch("http://localhost:8000/api/admins_ops/change-password", {
+    const response = await fetch(
+      "http://localhost:8000/api/admins_ops/change-password",
+      {
         method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "Authorization": `Bearer ${token}`, // 🔐 REQUIRED
+        },
         body: new URLSearchParams({
           email: changePasswordEmail,
           current_password: currentPassword,
           new_password: newPassword,
         }),
-      })
-
-      if (!response.ok) {
-        const err = await response.json()
-        throw new Error(err.detail || "Failed to change password")
       }
+    )
 
-      const data = await response.json()
-      setChangePasswordMessage("Password changed successfully! You can now login with your new password.")
-      setChangePasswordEmail("")
-      setCurrentPassword("")
-      setNewPassword("")
-      setConfirmPassword("")
+    const data = await response.json()
 
-      // Auto switch back to login after 2 seconds
-      setTimeout(() => {
-        setShowChangePassword(false)
-        setChangePasswordMessage("")
-      }, 2000)
-    } catch (err: any) {
-      setError(err.message)
-    } finally {
-      setChangePasswordLoading(false)
+    if (!response.ok) {
+      throw new Error(data.detail || "Failed to change password")
     }
+
+    setChangePasswordMessage(
+      "Password changed successfully! You can now login with your new password."
+    )
+
+    setChangePasswordEmail("")
+    setCurrentPassword("")
+    setNewPassword("")
+    setConfirmPassword("")
+
+    setTimeout(() => {
+      setShowChangePassword(false)
+      setChangePasswordMessage("")
+    }, 2000)
+  } catch (err: any) {
+    setError(err.message)
+  } finally {
+    setChangePasswordLoading(false)
   }
+}
 
   if (showChangePassword) {
     return (

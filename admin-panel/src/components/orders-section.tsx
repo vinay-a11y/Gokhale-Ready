@@ -15,9 +15,33 @@ const CONFIG = {
   ORDERS_PER_PAGE: 20,
   RECENT_DAYS_FILTER: 10,
   SEARCH_DEBOUNCE_DELAY: 300,
-  API_BASE_URL: "http://gokhalebandhu.com/api/admin/orders",
+  API_BASE_URL: "http://localhost:8000/api/admin/orders",
   AUTO_REFRESH_INTERVAL: 30000,
 }
+export const adminFetch = async (
+  url: string,
+  options: RequestInit = {}
+) => {
+  const token =
+    typeof window !== "undefined"
+      ? localStorage.getItem("adminToken")
+      : null
+
+  if (!token) {
+    window.location.href = "/admin/login"
+    throw new Error("Admin not authenticated")
+  }
+
+  return fetch(url, {
+    ...options,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      ...(options.headers || {}),
+    },
+    cache: "no-store",
+  })
+}
+
 
 export function OrdersSection() {
   // State management
@@ -43,9 +67,10 @@ export function OrdersSection() {
       try {
         if (!silent) setIsLoading(true)
 
-const response = await fetch("http://localhost:8000/api/admin/orders", {
-          credentials: "include",
-        })
+const response = await adminFetch(
+  "http://localhost:8000/api/admin/orders"
+)
+
 
         if (response.ok) {
           const data = await response.json()
@@ -84,7 +109,7 @@ const response = await fetch("http://localhost:8000/api/admin/orders", {
   // Update order status
   const updateOrderStatus = async (orderId: number, newStatus: OrderStatus) => {
     try {
-      const response = await fetch(`${CONFIG.API_BASE_URL}/${orderId}`, {
+      const response = await adminFetch(`${CONFIG.API_BASE_URL}/${orderId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

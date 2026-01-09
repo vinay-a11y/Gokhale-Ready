@@ -1,36 +1,55 @@
-from fastapi import APIRouter, Depends, HTTPException, Form
+from fastapi import APIRouter, Depends, HTTPException, Form, Request, status
 from sqlalchemy.orm import Session
-from app.database.session import get_db, Base, engine
 from sqlalchemy import Column, Integer, String
+from datetime import datetime, timedelta
+from jose import jwt, JWTError
 import bcrypt
-import jwt
+import os
+from dotenv import load_dotenv
 
-# -------------------------------
-# Admin model
-# -------------------------------
+from app.database.session import get_db, Base, engine
+
+# -------------------------------------------------
+# ENV
+# -------------------------------------------------
+load_dotenv()
+
+SECRET_KEY = os.getenv("SECRET_KEY", "super-secret-key")
+ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
+ADMIN_TOKEN_EXPIRE_MINUTES = int(os.getenv("ADMIN_TOKEN_EXPIRE_MINUTES", 720))
+
+# -------------------------------------------------
+# Admin Model
+# -------------------------------------------------
 class Admin(Base):
     __tablename__ = "admins_ops"
+
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String(255), unique=True, nullable=False)
     password = Column(String(255), nullable=False)
 
-# Create table if not exists
 Base.metadata.create_all(bind=engine)
 
-# -------------------------------
+# -------------------------------------------------
 # Router
-# -------------------------------
-router = APIRouter(prefix="/api/admins_ops", tags=["admins_ops"])
-SECRET_KEY = "7f93a5057e4e460c975234a0529a6919a3282d1f429dc1e42e99aee3498296ef"
+# -------------------------------------------------
+router = APIRouter(
+    prefix="/api/admins_ops",
+    tags=["admins_ops"]
+)
 
-# -------------------------------
-# Helper Functions
-# -------------------------------
+# -------------------------------------------------
+# Helpers
+# -------------------------------------------------
 def create_default_admin(db: Session):
-    if not db.query(Admin).filter_by(email="admin@gokhale.com").first():
-        hashed_password = bcrypt.hashpw("admin123".encode(), bcrypt.gensalt()).decode()
-        default_admin = Admin(email="admin@gokhale.com", password=hashed_password)
-        db.add(default_admin)
+    """
+    Creates default admin if not exists
+    """
+    admin = db.query(Admin).filter_by(email="admin@gokhale.com").first()
+    if not admin:
+        hashed = bcrypt.hashpw("admin123".encode(), bcrypt.gensalt()).decode()
+        admin = Admin(email="admin@gokhale.com", password=hashed)
+        db.add(admin)
         db.commit()
 
 def authenticate_admin(db: Session, email: str, password: str):
@@ -39,45 +58,117 @@ def authenticate_admin(db: Session, email: str, password: str):
         return admin
     return None
 
-def change_admin_password(db: Session, email: str, current_password: str, new_password: str):
-    admin = db.query(Admin).filter_by(email=email).first()
-    if not admin:
-        return False, "Admin not found"
-    if not bcrypt.checkpw(current_password.encode(), admin.password.encode()):
-        return False, "Current password is incorrect"
-    
-    admin.password = bcrypt.hashpw(new_password.encode(), bcrypt.gensalt()).decode()
-    db.commit()
-    return True, "Password changed successfully"
+def create_admin_token(admin_id: int, email: str):
+    expire = datetime.utcnow() + timedelta(minutes=ADMIN_TOKEN_EXPIRE_MINUTES)
+    payload = {
+        "sub": str(admin_id),
+        "email": email,
+        "role": "admin",
+        "exp": expire,
+    }
+    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
-# -------------------------------
-# Routes
-# -------------------------------
+# -------------------------------------------------
+# AUTH DEPENDENCY (LOCK)
+# -------------------------------------------------
+def get_current_admin(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    auth = request.headers.get("Authorization")
+
+    if not auth or not auth.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Admin not authenticated",
+        )
+
+    token = auth.replace("Bearer ", "")
+
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        if payload.get("role") != "admin":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Admin access only",
+            )
+        admin_id = payload.get("sub")
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token",
+        )
+
+    admin = db.query(Admin).filter(Admin.id == int(admin_id)).first()
+    if not admin:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Admin not found",
+        )
+
+    return admin
+
+# -------------------------------------------------
+# PUBLIC ROUTES
+# -------------------------------------------------
 @router.post("/login")
-def login(email: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
+def admin_login(
+    email: str = Form(...),
+    password: str = Form(...),
+    db: Session = Depends(get_db),
+):
     admin = authenticate_admin(db, email, password)
     if not admin:
-        raise HTTPException(status_code=401, detail="Invalid email or password")
-    token = jwt.encode({"id": admin.id, "email": admin.email}, SECRET_KEY, algorithm="HS256")
-    return {"token": token, "email": admin.email}
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password",
+        )
+
+    token = create_admin_token(admin.id, admin.email)
+
+    return {
+        "access_token": token,
+        "token_type": "Bearer",
+        "email": admin.email,
+    }
+
+# -------------------------------------------------
+# PROTECTED ROUTES
+# -------------------------------------------------
+@router.get("/me")
+def admin_profile(
+    admin: Admin = Depends(get_current_admin),
+):
+    return {
+        "id": admin.id,
+        "email": admin.email,
+        "role": "admin",
+    }
 
 @router.post("/change-password")
-def change_password(
-    email: str = Form(...),
+def change_admin_password(
     current_password: str = Form(...),
     new_password: str = Form(...),
-    db: Session = Depends(get_db)
+    admin: Admin = Depends(get_current_admin),
+    db: Session = Depends(get_db),
 ):
-    success, message = change_admin_password(db, email, current_password, new_password)
-    if not success:
-        raise HTTPException(status_code=401, detail=message)
-    return {"message": message}
+    if not bcrypt.checkpw(current_password.encode(), admin.password.encode()):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Current password incorrect",
+        )
 
-# -------------------------------
-# Ensure default admin on startup
-# -------------------------------
+    admin.password = bcrypt.hashpw(
+        new_password.encode(), bcrypt.gensalt()
+    ).decode()
+    db.commit()
+
+    return {"message": "Password changed successfully"}
+
+# -------------------------------------------------
+# STARTUP
+# -------------------------------------------------
 @router.on_event("startup")
-def ensure_default_admin():
+def ensure_admin():
     db = next(get_db())
     create_default_admin(db)
-
